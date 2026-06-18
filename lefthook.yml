@@ -1,5 +1,7 @@
-# Local guardrails so verification-class failures never reach CI.
-# Installed by `npx lefthook install`.
+# Local guardrails. Installed by `npx lefthook install`.
+# Lint + conventional-commit checks stay on commit (cheap).
+# The full verification scan runs on push (heavy), and uses `npx --yes`
+# so it never blocks on an interactive install prompt.
 
 pre-commit:
   parallel: true
@@ -7,12 +9,14 @@ pre-commit:
     lint:
       glob: '*.{ts,js,json}'
       run: npm run lint
-    scan:
-      # The same verified-node gate CI runs. Catches forbidden runtime deps,
-      # banned patterns, and community-package rule violations before push.
-      run: npx @n8n/scan-community-package "$(node -p "require('./package.json').name")"
 
 commit-msg:
   commands:
     commitlint:
-      run: npx commitlint --edit {1}
+      run: npx --yes commitlint --edit {1}
+
+pre-push:
+  commands:
+    scan:
+      # n8n's verification gate (same check the Creator Portal runs).
+      run: npx --yes @n8n/scan-community-package "$(node -p "require('./package.json').name")"
