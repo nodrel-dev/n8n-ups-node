@@ -1,7 +1,10 @@
 # Local guardrails. Installed by `npx lefthook install`.
-# Lint + conventional-commit checks stay on commit (cheap).
-# The full verification scan runs on push (heavy), and uses `npx --yes`
-# so it never blocks on an interactive install prompt.
+#
+# Note: @n8n/scan-community-package analyzes a PUBLISHED npm package (it fetches
+# the package from the registry by name), so it cannot run as a git hook before
+# the first publish — it will 404. Run it manually after publishing instead:
+#   npx --yes @n8n/scan-community-package n8n-nodes-ups
+# The real local verification gate is `n8n-node lint` (strict mode), below.
 
 pre-commit:
   parallel: true
@@ -14,9 +17,3 @@ commit-msg:
   commands:
     commitlint:
       run: npx --yes commitlint --edit {1}
-
-pre-push:
-  commands:
-    scan:
-      # n8n's verification gate (same check the Creator Portal runs).
-      run: npx --yes @n8n/scan-community-package "$(node -p "require('./package.json').name")"
