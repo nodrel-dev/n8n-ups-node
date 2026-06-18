@@ -1,0 +1,18 @@
+# Local guardrails so verification-class failures never reach CI.
+# Installed by `npx lefthook install`.
+
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: '*.{ts,js,json}'
+      run: npm run lint
+    scan:
+      # The same verified-node gate CI runs. Catches forbidden runtime deps,
+      # banned patterns, and community-package rule violations before push.
+      run: npx @n8n/scan-community-package "$(node -p "require('./package.json').name")"
+
+commit-msg:
+  commands:
+    commitlint:
+      run: npx commitlint --edit {1}

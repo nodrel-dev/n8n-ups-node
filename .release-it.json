@@ -1,0 +1,21 @@
+{
+  "//": "n8n-node release runs release-it under the hood. This config makes it derive the version bump and CHANGELOG from conventional commits. VERIFY (Principle 12): confirm `n8n-node release` honours this project-level config. If it overrides release-it, change the release npm script to invoke release-it directly, then let publish.yml publish on the pushed tag.",
+  "git": {
+    "commitMessage": "chore(release): v${version}",
+    "tagName": "v${version}",
+    "requireCleanWorkingDir": true
+  },
+  "npm": {
+    "//": "Do NOT let release-it publish. The publish.yml GitHub Action publishes with OIDC provenance on the pushed tag.",
+    "publish": false
+  },
+  "github": {
+    "release": true
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": { "name": "conventionalcommits" },
+      "infile": "CHANGELOG.md"
+    }
+  }
+}

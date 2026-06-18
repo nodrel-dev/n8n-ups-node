@@ -1,0 +1,46 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'   # n8n-node dev requires >= 22.22; CI builds on 22.x
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint (n8n-node lint, strict mode)
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      # Verified-node gate: must pass with zero errors.
+      - name: Scan community package
+        run: npx @n8n/scan-community-package "$(node -p "require('./package.json').name")"
+
+      # Confirms the published tarball is LICENSE + README + dist only
+      # (guards the incremental-build trap from the gotchas).
+      - name: Pack check
+        run: npm pack --dry-run
+
+  # Optional: dual-path execution test in a real n8n container.
+  # Enable once you have harness workflows committed under test/.
+  # harness:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: ./scripts/harness.sh --ci
