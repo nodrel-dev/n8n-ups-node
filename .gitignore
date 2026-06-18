@@ -181,3 +181,7 @@ ups-api-documentation/UPSTrackAlert.yaml
 ups-api-documentation/UPSTrackAlertEnhanced-Ready.yaml
 ups-api-documentation/UPSTrackAlertEnhanced.yaml
 ups-api-documentation/WorldEaseShipmentManagement.yaml
+
+# --- added by n8n-node-scaffold ---
+.env.local
+*.tgz

@@ -1,0 +1,55 @@
+{
+  "name": "n8n-nodes-ups",
+  "version": "0.1.0",
+  "description": "n8n community node for UPS: rating, tracking, and address validation via the UPS REST API.",
+  "license": "MIT",
+  "homepage": "https://github.com/nodrel-dev/n8n-nodes-ups",
+  "keywords": [
+    "n8n-community-node-package"
+  ],
+  "author": {
+    "name": "nodrel-dev",
+    "email": "289239657+nodrel-dev@users.noreply.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nodrel-dev/n8n-nodes-ups.git"
+  },
+  "scripts": {
+    "build": "n8n-node build",
+    "build:watch": "tsc --watch",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "release": "n8n-node release",
+    "prepublishOnly": "n8n-node prerelease"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/UpsOAuth2Api.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Ups/Ups.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "@n8n/node-cli": "*",
+    "@release-it/conventional-changelog": "^11.0.1",
+    "eslint": "9.32.0",
+    "lefthook": "^2.1.9",
+    "n8n-workflow": "^2.16.0",
+    "prettier": "3.6.2",
+    "release-it": "^19.0.4",
+    "typescript": "5.9.2"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}
