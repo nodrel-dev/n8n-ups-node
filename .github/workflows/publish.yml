@@ -39,9 +39,10 @@
 #
 # ─── TAG CONVENTION ────────────────────────────────────────────────────────────
 #
-# This workflow triggers on tags matching "*.*.*" (e.g. 0.2.0).
-# If you prefer tags with a "v" prefix (e.g. v0.2.0), change the filter to:
-#   tags: ['v*.*.*']
+# This workflow triggers on tags matching "v*.*.*" (e.g. v0.2.0).
+# This MUST match the tag that `release-it` creates — `.release-it.json` sets
+# `git.tagName: "v${version}"`, so the pushed tag is v-prefixed. A non-v filter
+# (e.g. "*.*.*") would silently never fire on release-it's tags — the original bug.
 #
 # ─── RELEASE PROCESS ───────────────────────────────────────────────────────────
 #
@@ -57,9 +58,9 @@ name: Publish
 on:
   push:
     tags:
-      # Matches 0.1.0, 1.2.3, 2.0.0-rc.1, etc.
-      # See "TAG CONVENTION" above if you prefer tags with a "v" prefix.
-      - '*.*.*'
+      # Matches v0.1.0, v1.2.3, v2.0.0-rc.1, etc. MUST stay in sync with
+      # `.release-it.json` `git.tagName` (v${version}). See "TAG CONVENTION" above.
+      - 'v*.*.*'
 
 jobs:
   publish:
@@ -78,8 +79,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: '24'
           cache: 'npm'
+          # Required for npm provenance / OIDC Trusted Publishing: npm needs the
+          # registry configured to perform the OIDC token exchange on publish.
+          registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
         run: 'npm ci'
@@ -108,7 +112,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: '24'
 
       # The scan fetches the package from npm; first-publish read-CDN propagation can lag
       # ~5 minutes (gotchas §7), so wait before scanning to avoid a spurious 404.

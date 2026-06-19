@@ -12,7 +12,8 @@ Rules are imperative. Rationale lives in the imports below; do not duplicate it 
 
 ## Rules
 - Zero runtime dependencies. Built-in n8n HTTP helpers only. Never add a SOAP/XML/SDK dep.
-- Node.js >= 22.22 for `n8n-node dev`.
+- Node.js >= 22.22 for `n8n-node dev`. All GitHub Actions workflows pin **Node 24**
+  (`actions/setup-node` `node-version: '24'`) — keep every workflow on 24, not `lts/*` or `22`.
 - Build/lint/dev/release go through the n8n-node CLI. Publish only via `npm run release`
   (wraps `n8n-node release`); never raw `npm publish`.
 - Keep TypeScript `incremental` OFF. Run `npm pack --dry-run` before every release.

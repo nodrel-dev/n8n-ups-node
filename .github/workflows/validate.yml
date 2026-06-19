@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'   # n8n-node dev requires >= 22.22; CI builds on 22.x
+          node-version: '24'   # all GH Actions pin Node 24 (satisfies n8n-node's >= 22.22 floor)
           cache: 'npm'
 
       - name: Install
