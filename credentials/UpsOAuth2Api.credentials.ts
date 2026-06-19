@@ -27,7 +27,7 @@ export class UpsOAuth2Api implements ICredentialType {
 
 	icon: Icon = 'file:ups.svg';
 
-	documentationUrl = 'https://github.com/nodrel-dev/n8n-nodes-ups?tab=readme-ov-file#credentials';
+	documentationUrl = 'https://github.com/nodrel-dev/n8n-ups-node?tab=readme-ov-file#credentials';
 
 	properties: INodeProperties[] = [
 		{

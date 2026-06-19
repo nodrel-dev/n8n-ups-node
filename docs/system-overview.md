@@ -222,12 +222,12 @@ Field-by-field shapes are in the [Data Model](data-model.md). Endpoint and body 
 
 | Concern | Source |
 | ------- | ------ |
-| Node definition, resources, base URL, credential binding | [Ups.node.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/Ups.node.ts) |
-| OAuth config, environment switch, credential test | [UpsOAuth2Api.credentials.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/credentials/UpsOAuth2Api.credentials.ts) |
-| Track operation (headers, postReceive) | [resources/tracking/track.operation.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/tracking/track.operation.ts) |
-| Validate operation | [resources/address/validate.operation.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/address/validate.operation.ts) |
-| Get Rates operation | [resources/shipping/getRates.operation.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/shipping/getRates.operation.ts) |
-| Create operation | [resources/shipping/create.operation.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/shipping/create.operation.ts) |
-| Pure cores | [nodes/Ups/core/](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core) |
-| Error mapping | [core/mapUpsError.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/mapUpsError.ts) |
-| Architecture decisions | [docs/adr/](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/docs/adr) |
+| Node definition, resources, base URL, credential binding | [Ups.node.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/Ups.node.ts) |
+| OAuth config, environment switch, credential test | [UpsOAuth2Api.credentials.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/credentials/UpsOAuth2Api.credentials.ts) |
+| Track operation (headers, postReceive) | [resources/tracking/track.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/tracking/track.operation.ts) |
+| Validate operation | [resources/address/validate.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/address/validate.operation.ts) |
+| Get Rates operation | [resources/shipping/getRates.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/getRates.operation.ts) |
+| Create operation | [resources/shipping/create.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/create.operation.ts) |
+| Pure cores | [nodes/Ups/core/](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core) |
+| Error mapping | [core/mapUpsError.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/mapUpsError.ts) |
+| Architecture decisions | [docs/adr/](https://github.com/nodrel-dev/n8n-ups-node/blob/main/docs/adr) |

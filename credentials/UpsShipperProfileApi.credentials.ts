@@ -25,7 +25,7 @@ export class UpsShipperProfileApi implements ICredentialType {
 	icon: Icon = 'file:ups.svg';
 
 	documentationUrl =
-		'https://github.com/nodrel-dev/n8n-nodes-ups?tab=readme-ov-file#shipper-profiles';
+		'https://github.com/nodrel-dev/n8n-ups-node?tab=readme-ov-file#shipper-profiles';
 
 	properties: INodeProperties[] = [
 		{
