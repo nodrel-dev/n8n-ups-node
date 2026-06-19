@@ -22,6 +22,8 @@ equalling a fixed value). It cannot compare two user-entered fields (`ShipFrom.c
   Effective Origin vs `ShipTo` country. Rate's pre-send and Create's `execute()` both call
   it. International + missing customs data → `NodeOperationError` at the boundary **before**
   any UPS call (FR-014). Not international → the customs block is not sent even if filled.
+  _(Correction 2026-06-19: Create has no `execute()` — the node is fully declarative (ADR-0004);
+  Create calls `isInternational` from its `preSend`, not an `execute()`.)_
 
 **Why it's acceptable:** The Effective Origin invariant lives in one function, called by both
 operations, so they cannot diverge. Always-visible optional groups plus a notice is the

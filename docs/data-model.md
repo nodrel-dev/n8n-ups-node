@@ -128,10 +128,10 @@ cores own the rules:
 | `weight` / `weightUnit` | `Package.PackageWeight` + `ShipmentTotalWeight` (Rate) | Get Rates, Create |
 | `dimensions.dimension` / `dimensionUnit` | `Package.Dimensions` (sent only when provided) | Get Rates, Create |
 | `customsValue` / `customsCurrency` | `InvoiceLineTotal.MonetaryValue`/`CurrencyCode` (required if international) | Get Rates |
-| `service` | `Service.Code` (default `03`) | Create |
+| `service` | `Service.Code` (options dropdown; default `03`) | Create |
 | `labelFormat` | `LabelSpecification.LabelImageFormat.Code` + binary MIME | Create |
-| `customsReasonForExport` / `customsCurrency` / `customsTermsOfShipment` | `InternationalForms.ReasonForExport` / `CurrencyCode` / `TermsOfShipment` | Create (international) |
-| `customsInvoiceNumber` / `customsInvoiceDate` | `InternationalForms.InvoiceNumber` / `InvoiceDate` (date defaults to today UTC) | Create (international) |
+| `customs.reasonForExport` / `customs.currency` / `customs.termsOfShipment` | `InternationalForms.ReasonForExport` / `CurrencyCode` / `TermsOfShipment` | Create (international) |
+| `customs.invoiceNumber` / `customs.invoiceDate` | `InternationalForms.InvoiceNumber` / `InvoiceDate` (date defaults to today UTC) | Create (international) |
 | `soldTo*` | `InternationalForms.Contacts.SoldTo` | Create (international) |
 | `commodities.line[]` | `InternationalForms.Product[]` (via `buildCommodities`; ≥1 required if international) | Create (international) |
 

@@ -37,7 +37,8 @@
     "n8nNodesApiVersion": 1,
     "strict": true,
     "credentials": [
-      "dist/credentials/UpsOAuth2Api.credentials.js"
+      "dist/credentials/UpsOAuth2Api.credentials.js",
+      "dist/credentials/UpsShipperProfileApi.credentials.js"
     ],
     "nodes": [
       "dist/nodes/Ups/Ups.node.js"

@@ -1,4 +1,12 @@
-import { NodeConnectionTypes, type INodeType, type INodeTypeDescription } from 'n8n-workflow';
+import {
+	NodeConnectionTypes,
+	type ICredentialsDecrypted,
+	type ICredentialTestFunctions,
+	type IDataObject,
+	type INodeCredentialTestResult,
+	type INodeType,
+	type INodeTypeDescription,
+} from 'n8n-workflow';
 import { trackingDescription } from './resources/tracking';
 import { addressDescription } from './resources/address';
 import { shippingDescription } from './resources/shipping';
@@ -23,7 +31,13 @@ export class Ups implements INodeType {
 		usableAsTool: true,
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
-		credentials: [{ name: 'upsOAuth2Api', required: true }],
+		credentials: [
+			{ name: 'upsOAuth2Api', required: true },
+			// Optional, non-auth config credential (ADR-0005). Holds reusable Shipper fields + account
+			// number; read at run time in the Get Rates / Create preSend and merged into the Shipper
+			// block (explicit field > profile > default). Only `upsOAuth2Api` authenticates requests.
+			{ name: 'upsShipperProfileApi', required: false, testedBy: 'upsShipperProfileTest' },
+		],
 		requestDefaults: {
 			// baseURL is environment-derived from the SAME credential field that drives the token URL,
 			// so token exchange and API calls can never split hosts (host-split guard, ADR-0001).
@@ -52,5 +66,49 @@ export class Ups implements INodeType {
 			...addressDescription,
 			...shippingDescription,
 		],
+	};
+
+	// The optional `upsShipperProfileApi` credential is non-auth (ADR-0005) — there is nothing to call
+	// to "test" it, so this runs an OFFLINE validation: the Test button confirms the profile is
+	// internally usable (a recognizable account number and, if present, a 2-letter country code)
+	// rather than reaching UPS. Declaring `methods` does not disable declarative routing (only an
+	// `execute()` method would), so Track/Validate/Rate/Create stay declarative.
+	methods = {
+		credentialTest: {
+			async upsShipperProfileTest(
+				this: ICredentialTestFunctions,
+				credential: ICredentialsDecrypted,
+			): Promise<INodeCredentialTestResult> {
+				const data = (credential.data ?? {}) as IDataObject;
+				const str = (key: string): string => String(data[key] ?? '').trim();
+
+				const filled = [
+					'accountNumber',
+					'shipperName',
+					'addressLine1',
+					'city',
+					'stateProvinceCode',
+					'postalCode',
+					'countryCode',
+					'phone',
+				].some((key) => str(key).length > 0);
+				if (!filled) {
+					return {
+						status: 'Error',
+						message: 'Shipper profile is empty — fill at least an account number or address.',
+					};
+				}
+
+				const country = str('countryCode');
+				if (country.length > 0 && !/^[A-Za-z]{2}$/.test(country)) {
+					return {
+						status: 'Error',
+						message: `Country Code "${country}" must be a two-letter code (e.g. US, CA).`,
+					};
+				}
+
+				return { status: 'OK', message: 'Shipper profile looks valid.' };
+			},
+		},
 	};
 }

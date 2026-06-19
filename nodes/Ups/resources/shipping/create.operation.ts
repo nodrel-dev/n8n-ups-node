@@ -15,7 +15,17 @@ import { extractLabel, type LabelFormat } from '../../core/extractLabel';
 import { extractForms } from '../../core/extractForms';
 import { extractCharges } from '../../core/extractCharges';
 import { mapUpsError } from '../../core/mapUpsError';
-import { addressFields, readAddress, readPackage, type ParamGetter } from './shared';
+import {
+	addressFields,
+	packageFields,
+	readAddress,
+	readPackage,
+	loadShipperProfile,
+	readShipper,
+	CURRENCY_OPTIONS,
+	type ParamGetter,
+	type ResolvedShipper,
+} from './shared';
 
 const showOnlyForCreate = {
 	operation: ['create'],
@@ -60,14 +70,27 @@ function todayYyyyMmdd(): string {
 	return new Date().toISOString().slice(0, 10).replace(/-/g, '');
 }
 
+interface CustomsCollection {
+	reasonForExport?: string;
+	currency?: string;
+	termsOfShipment?: string;
+	invoiceNumber?: string;
+	invoiceDate?: string;
+}
+
 function readCustoms(get: ParamGetter): CustomsInput {
 	const soldTo = readAddress(get, 'soldTo');
+	// Customs scalars live in a `customs` collection (collapsed for domestic users). The collection
+	// defaults to `{}` until the user adds fields, so each value falls back to the same default that
+	// used to live on the flat field (SALE / USD / DDU / today). Fallback must NOT be undefined or
+	// getNodeParameter throws "Could not get parameter" (see readPackage).
+	const customs = get('customs', {}) as CustomsCollection;
 	return {
-		reasonForExport: get('customsReasonForExport', 'SALE') as string,
-		currency: get('customsCurrency', 'USD') as string,
-		termsOfShipment: get('customsTermsOfShipment', 'DDU') as string,
-		invoiceNumber: (get('customsInvoiceNumber', '') as string) || undefined,
-		invoiceDate: (get('customsInvoiceDate', '') as string).trim() || todayYyyyMmdd(),
+		reasonForExport: customs.reasonForExport || 'SALE',
+		currency: customs.currency || 'USD',
+		termsOfShipment: customs.termsOfShipment || 'DDU',
+		invoiceNumber: (customs.invoiceNumber || '').trim() || undefined,
+		invoiceDate: (customs.invoiceDate || '').trim() || todayYyyyMmdd(),
 		soldTo: {
 			name: get('soldToName', '') as string,
 			addressLines: soldTo.addressLines,
@@ -79,21 +102,27 @@ function readCustoms(get: ParamGetter): CustomsInput {
 	};
 }
 
-function buildShipmentBody(get: ParamGetter, international: boolean): IDataObject {
-	const accountNumber = (get('accountNumber', '') as string).trim();
+function buildShipmentBody(
+	get: ParamGetter,
+	international: boolean,
+	resolvedShipper: ResolvedShipper,
+): IDataObject {
+	// Shipper (address + name + phone + account number) is already resolved with profile precedence
+	// (explicit field > profile > default, ADR-0005). The other parties read straight from fields.
+	const accountNumber = resolvedShipper.accountNumber;
 	const service = get('service', '03') as string;
 	const labelFormat = get('labelFormat', 'GIF') as string;
 
-	const shipper = readAddress(get, 'shipper');
+	const shipper = resolvedShipper.address;
 	const shipTo = readAddress(get, 'shipTo');
 	const shipFrom = readAddress(get, 'shipFrom');
 	const hasShipFrom = shipFrom.addressLines.length > 0 || shipFrom.city.length > 0;
 	const effectiveShipFrom = hasShipFrom ? shipFrom : shipper;
 
-	const shipperName = get('shipperName', '') as string;
+	const shipperName = resolvedShipper.name;
 	const shipToName = get('shipToName', '') as string;
 	const shipFromName = (get('shipFromName', shipperName) as string) || shipperName;
-	const shipperPhone = get('shipperPhone', '') as string;
+	const shipperPhone = resolvedShipper.phone;
 	const shipToPhone = get('shipToPhone', '') as string;
 
 	// UPS requires an AttentionName on each party for international shipments — omitting ShipFrom's
@@ -171,12 +200,19 @@ async function createPreSend(
 	const node = this.getNode();
 	const get: ParamGetter = (name, fallback) => this.getNodeParameter(name, fallback as never);
 
-	const accountNumber = (get('accountNumber', '') as string).trim();
+	// Resolve Shipper (incl. account number + country) with profile precedence BEFORE the
+	// internationality check, so a profile-supplied Shipper country correctly drives it (ADR-0005).
+	const profile = await loadShipperProfile(this);
+	const resolvedShipper = readShipper(get, profile);
+	const accountNumber = resolvedShipper.accountNumber;
 	if (!accountNumber) {
-		throw new NodeOperationError(node, 'An account number is required to create a shipment.');
+		throw new NodeOperationError(node, 'An account number is required to create a shipment.', {
+			description:
+				'Enter your UPS account number (ShipperNumber), or attach a UPS Shipper Profile credential that supplies one.',
+		});
 	}
 
-	const shipper = readAddress(get, 'shipper');
+	const shipper = resolvedShipper.address;
 	const shipTo = readAddress(get, 'shipTo');
 	const shipFrom = readAddress(get, 'shipFrom');
 	const hasShipFrom = shipFrom.addressLines.length > 0 || shipFrom.city.length > 0;
@@ -193,7 +229,7 @@ async function createPreSend(
 		);
 	}
 
-	requestOptions.body = buildShipmentBody(get, international);
+	requestOptions.body = buildShipmentBody(get, international, resolvedShipper);
 	return requestOptions;
 }
 
@@ -248,20 +284,60 @@ export const createOperationDescription: INodeProperties[] = [
 		displayName: 'Account Number',
 		name: 'accountNumber',
 		type: 'string',
-		required: true,
 		default: '',
 		displayOptions: { show: showOnlyForCreate },
-		description: 'Your UPS account number (ShipperNumber). Billed as the shipper (Type 01).',
+		description:
+			'Your UPS account number (ShipperNumber). Billed as the shipper (Type 01). Leave blank only if a UPS Shipper Profile credential supplies it.',
 	},
 	{
-		displayName: 'Service Code',
+		displayName: 'Service',
 		name: 'service',
-		type: 'string',
+		type: 'options',
 		required: true,
+		// Full Service.Code enum from the UPS Shipping API spec (Shipping.yaml). Not every code is
+		// valid on every lane — availability depends on origin/destination and account entitlement —
+		// so an unlisted code can still be supplied via an expression. Stored value is the raw code.
+		options: [
+			{ name: 'Next Day Air (01)', value: '01' },
+			{ name: '2nd Day Air (02)', value: '02' },
+			{ name: 'Ground (03)', value: '03' },
+			{ name: 'Express (07)', value: '07' },
+			{ name: 'Expedited (08)', value: '08' },
+			{ name: 'UPS Standard (11)', value: '11' },
+			{ name: '3 Day Select (12)', value: '12' },
+			{ name: 'Next Day Air Saver (13)', value: '13' },
+			{ name: 'Next Day Air Early (14)', value: '14' },
+			{ name: 'Worldwide Economy DDU (17)', value: '17' },
+			{ name: 'Express Plus (54)', value: '54' },
+			{ name: '2nd Day Air A.M. (59)', value: '59' },
+			{ name: 'UPS Saver (65)', value: '65' },
+			{ name: 'Access Point Economy (70)', value: '70' },
+			{ name: 'Worldwide Express Freight Midday (71)', value: '71' },
+			{ name: 'Worldwide Economy DDP (72)', value: '72' },
+			{ name: 'Express 12:00 (74)', value: '74' },
+			{ name: 'UPS Heavy Goods (75)', value: '75' },
+			{ name: 'UPS Today Standard (82)', value: '82' },
+			{ name: 'UPS Today Dedicated Courier (83)', value: '83' },
+			{ name: 'UPS Today Intercity (84)', value: '84' },
+			{ name: 'First Class Mail (M2)', value: 'M2' },
+			{ name: 'Priority Mail (M3)', value: 'M3' },
+			{ name: 'Expedited Mail Innovations (M4)', value: 'M4' },
+			{ name: 'Priority Mail Innovations (M5)', value: 'M5' },
+			{ name: 'Economy Mail Innovations (M6)', value: 'M6' },
+			{ name: 'Mail Innovations Returns (M7)', value: 'M7' },
+		],
 		default: '03',
-		placeholder: '03 = Ground',
 		displayOptions: { show: showOnlyForCreate },
-		description: 'UPS service code (e.g. 03 Ground, 02 2nd Day Air, 01 Next Day Air)',
+		description:
+			'UPS service. Availability depends on the lane and account; codes shown in parentheses match UPS Service.Code.',
+	},
+	{
+		displayName:
+			'The Shipper fields below (and Account Number) can be supplied by an optional UPS Shipper Profile credential. An explicit value here always overrides the profile; leave a field blank to inherit it from the profile.',
+		name: 'shipperProfileNoticeCreate',
+		type: 'notice',
+		default: '',
+		displayOptions: { show: showOnlyForCreate },
 	},
 	...addressFields({
 		prefix: 'shipper',
@@ -269,13 +345,14 @@ export const createOperationDescription: INodeProperties[] = [
 		show: showOnlyForCreate,
 		includeName: true,
 		includePhone: true,
-		required: true,
+		countryDefault: '',
 	}),
 	...addressFields({
 		prefix: 'shipFrom',
-		label: 'Ship From (optional, defaults to Shipper)',
+		label: 'Ship From',
 		show: showOnlyForCreate,
 		includeName: true,
+		hint: 'Optional. Defaults to the Shipper address when left blank.',
 	}),
 	...addressFields({
 		prefix: 'shipTo',
@@ -286,54 +363,7 @@ export const createOperationDescription: INodeProperties[] = [
 		includeResidential: true,
 		required: true,
 	}),
-	{
-		displayName: 'Weight',
-		name: 'weight',
-		type: 'number',
-		default: 1,
-		required: true,
-		displayOptions: { show: showOnlyForCreate },
-	},
-	{
-		displayName: 'Weight Unit',
-		name: 'weightUnit',
-		type: 'options',
-		options: [
-			{ name: 'Pounds (LBS)', value: 'LBS' },
-			{ name: 'Kilograms (KGS)', value: 'KGS' },
-		],
-		default: 'LBS',
-		displayOptions: { show: showOnlyForCreate },
-	},
-	{
-		displayName: 'Dimensions',
-		name: 'dimensions',
-		type: 'fixedCollection',
-		default: {},
-		displayOptions: { show: showOnlyForCreate },
-		options: [
-			{
-				displayName: 'Dimension',
-				name: 'dimension',
-				values: [
-					{ displayName: 'Height', name: 'height', type: 'number', default: 0 },
-					{ displayName: 'Length', name: 'length', type: 'number', default: 0 },
-					{ displayName: 'Width', name: 'width', type: 'number', default: 0 },
-				],
-			},
-		],
-	},
-	{
-		displayName: 'Dimension Unit',
-		name: 'dimensionUnit',
-		type: 'options',
-		options: [
-			{ name: 'Centimeters (CM)', value: 'CM' },
-			{ name: 'Inches (IN)', value: 'IN' },
-		],
-		default: 'IN',
-		displayOptions: { show: showOnlyForCreate },
-	},
+	...packageFields(showOnlyForCreate),
 	{
 		displayName: 'Label Format',
 		name: 'labelFormat',
@@ -350,56 +380,69 @@ export const createOperationDescription: INodeProperties[] = [
 	},
 	{
 		displayName:
-			'The customs fields below are REQUIRED when the origin and destination countries differ (international). Leave them empty for domestic shipments.',
+			'The Customs, Sold To, and Commodities fields below are REQUIRED when the origin and destination countries differ (international). Leave them empty for domestic shipments — sensible defaults are applied automatically.',
 		name: 'customsNotice',
 		type: 'notice',
 		default: '',
 		displayOptions: { show: showOnlyForCreate },
 	},
 	{
-		displayName: 'Reason For Export',
-		name: 'customsReasonForExport',
-		type: 'string',
-		default: 'SALE',
+		// International customs scalars, grouped so domestic users see one collapsed row instead of
+		// five always-on fields (restores the `customs` collection from contracts/create-shipment.md).
+		// Each value still falls back to its prior default in readCustoms when the user adds nothing.
+		displayName: 'Customs',
+		name: 'customs',
+		type: 'collection',
+		placeholder: 'Add Customs Field',
+		default: {},
 		displayOptions: { show: showOnlyForCreate },
-	},
-	{
-		displayName: 'Customs Currency',
-		name: 'customsCurrency',
-		type: 'string',
-		default: 'USD',
-		displayOptions: { show: showOnlyForCreate },
-	},
-	{
-		displayName: 'Terms Of Shipment',
-		name: 'customsTermsOfShipment',
-		type: 'string',
-		default: 'DDU',
-		displayOptions: { show: showOnlyForCreate },
-		description: 'Incoterms. v1 bills duties to the receiver (DDU).',
-	},
-	{
-		displayName: 'Invoice Number',
-		name: 'customsInvoiceNumber',
-		type: 'string',
-		default: '',
-		displayOptions: { show: showOnlyForCreate },
-	},
-	{
-		displayName: 'Invoice Date',
-		name: 'customsInvoiceDate',
-		type: 'string',
-		default: '',
-		placeholder: 'yyyyMMdd',
-		displayOptions: { show: showOnlyForCreate },
-		description:
-			'Commercial-invoice date in yyyyMMdd format. UPS requires it for international shipments; leave blank to use today (UTC).',
+		description: 'Commercial-invoice details for international shipments',
+		options: [
+			{
+				displayName: 'Customs Currency',
+				name: 'currency',
+				type: 'options',
+				options: CURRENCY_OPTIONS,
+				default: 'USD',
+				description:
+					'Commercial-invoice currency. Pick a common code, or use an expression for any ISO 4217 code.',
+			},
+			{
+				displayName: 'Invoice Date',
+				name: 'invoiceDate',
+				type: 'string',
+				default: '',
+				placeholder: 'yyyyMMdd',
+				description:
+					'Commercial-invoice date in yyyyMMdd format. UPS requires it for international shipments; leave blank to use today (UTC).',
+			},
+			{
+				displayName: 'Invoice Number',
+				name: 'invoiceNumber',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Reason For Export',
+				name: 'reasonForExport',
+				type: 'string',
+				default: 'SALE',
+			},
+			{
+				displayName: 'Terms Of Shipment',
+				name: 'termsOfShipment',
+				type: 'string',
+				default: 'DDU',
+				description: 'Incoterms. v1 bills duties to the receiver (DDU).',
+			},
+		],
 	},
 	...addressFields({
 		prefix: 'soldTo',
-		label: 'Sold To (International)',
+		label: 'Sold To',
 		show: showOnlyForCreate,
 		includeName: true,
+		hint: 'International shipments only. The party the goods are sold to (commercial invoice).',
 	}),
 	{
 		displayName: 'Commodities',
@@ -417,9 +460,21 @@ export const createOperationDescription: INodeProperties[] = [
 					{ displayName: 'Commodity Code', name: 'commodityCode', type: 'string', default: '' },
 					{ displayName: 'Description', name: 'description', type: 'string', default: '' },
 					{ displayName: 'Origin Country', name: 'originCountry', type: 'string', default: '' },
-					{ displayName: 'Quantity', name: 'quantity', type: 'number', default: 1 },
+					{
+						displayName: 'Quantity',
+						name: 'quantity',
+						type: 'number',
+						default: 1,
+						typeOptions: { minValue: 0 },
+					},
 					{ displayName: 'Unit Of Measure', name: 'unitOfMeasure', type: 'string', default: 'EA' },
-					{ displayName: 'Unit Value', name: 'unitValue', type: 'number', default: 0 },
+					{
+						displayName: 'Unit Value',
+						name: 'unitValue',
+						type: 'number',
+						default: 0,
+						typeOptions: { minValue: 0 },
+					},
 				],
 			},
 		],
