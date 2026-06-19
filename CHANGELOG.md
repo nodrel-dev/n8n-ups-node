@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.2.1...v0.2.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* **release:** set publishConfig access public for provenance; fix CI concurrency ([#10](https://github.com/nodrel-dev/n8n-nodes-ups/issues/10)) ([f350e33](https://github.com/nodrel-dev/n8n-nodes-ups/commit/f350e33c6036af07d195c72068ca3edecf08c67e))
+
 ## [0.2.1](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.2.0...v0.2.1) (2026-06-19)
 
 
