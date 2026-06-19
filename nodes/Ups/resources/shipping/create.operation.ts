@@ -141,17 +141,29 @@ function buildShipmentBody(get: ParamGetter, international: boolean): IDataObjec
 		};
 	}
 
+	// GIF is an image label and needs no stock size; the thermal formats (ZPL/EPL/SPL) are rejected
+	// with 9120244 "Missing label specification label stock size" unless LabelStockSize is supplied.
+	// 4x6 in is the standard thermal label (Height 6, Width 4). Verified live CIE.
+	const labelSpecification: IDataObject = { LabelImageFormat: { Code: labelFormat } };
+	if (labelFormat !== 'GIF') {
+		labelSpecification.LabelStockSize = { Height: '6', Width: '4' };
+	}
+
 	return {
 		ShipmentRequest: {
 			Request: { RequestOption: 'nonvalidate' },
 			Shipment: shipment,
-			LabelSpecification: { LabelImageFormat: { Code: labelFormat } },
+			LabelSpecification: labelSpecification,
 		},
 	};
 }
 
 // preSend: enforce the two boundary invariants (FR-010/FR-014) BEFORE any UPS call, then assemble
-// the ShipmentRequest body. Boundary failures throw NodeOperationError (never NodeApiError).
+// the ShipmentRequest body. We throw NodeOperationError, but n8n's declarative routing engine
+// rewraps any preSend throw into NodeApiError with httpCode='none' (verified live; routing-node
+// wraps non-NodeApiError errors) — the message is preserved and httpCode='none' marks it as a
+// pre-call boundary failure rather than a real UPS HTTP error. (A literal-empty required param is
+// caught even earlier by n8n's own field validation, before the node runs at all.)
 async function createPreSend(
 	this: IExecuteSingleFunctions,
 	requestOptions: IHttpRequestOptions,
