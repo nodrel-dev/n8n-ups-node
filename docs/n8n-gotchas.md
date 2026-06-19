@@ -50,11 +50,20 @@ LICENSE + README + dist only.
 
 ## §7 — Release & publish
 
-- Publish via `n8n-node release` (which wraps release-it), **never** raw `npm publish`
-  (a prepublish guard exits 1).
+- Releases are driven by **release-please** (`release-please.yml` + `release-please-config.json`
+  + `.release-please-manifest.json`): conventional commits on `main` accrue into a release PR;
+  merging it tags `v<version>`, cuts the GitHub release, and triggers the in-workflow publish job.
+- The publish job runs `npm run release`, which in CI lints, builds, and `npm publish`es with
+  provenance (`NPM_CONFIG_PROVENANCE=true`, `RELEASE_MODE=true`). **Never** run a release or raw
+  `npm publish` locally — the `prepublishOnly` guard (`n8n-node prerelease`) exits 1 without
+  `RELEASE_MODE`.
+- Keep publish in the SAME workflow as release-please, gated on its `release_created` output: a
+  tag/release created by the default `GITHUB_TOKEN` does NOT trigger a separate tag-listening
+  workflow (GitHub recursion guard), so a standalone `publish.yml` would silently never fire.
 - Publish from GitHub Actions with **OIDC Trusted Publishing** + provenance — required
-  for verification submissions from May 1, 2026. No long-lived token.
-- Configure the Trusted Publisher with the workflow filename (e.g. `publish.yml`), not
+  for verification submissions from May 1, 2026. No long-lived token. Node 24 (npm 11) is
+  required for the OIDC token exchange.
+- Configure the Trusted Publisher with the workflow filename (`release-please.yml`), not
   the workflow's `name:` field.
 - A `404 PUT` on a scoped package usually means the publish ran unauthenticated.
 - First-publish read-CDN propagation can lag ~5 minutes.

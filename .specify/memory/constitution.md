@@ -43,8 +43,8 @@ Sync Impact Report (1.0.0, 2026-06-18)
 
 **Service:** UPS
 **Ratified:** 2026-06-18
-**Last Amended:** 2026-06-18
-**Version:** 1.1.0
+**Last Amended:** 2026-06-19
+**Version:** 1.2.0
 
 ---
 
@@ -183,18 +183,20 @@ One credential not two; base URL includes `/api`; Track is GET-per-number; trans
 rating via `Shoptimeintransit`; Validate uses request option 3 (CIE NY/CA only); no PDF label;
 international customs is in v1; billing is `PaymentInformation.ShipmentCharge` Type 01
 BillShipper (request-side container is `Packaging` in Ship, `PackagingType` in Rate); toolchain
-is npm + release-it (NOT pnpm + release-please — do not port the FedEx pipeline).
+is npm + **release-please** (amended 2026-06-19, v1.2.0; the package manager stays npm — only the
+release tool changed, do not adopt pnpm).
 
 ---
 
 ## Inherited Engineering Guardrails
 See `docs/n8n-gotchas.md` and the NFRs in the build brief (§17). Highlights: Node >= 22.22;
-`incremental` OFF + `npm pack --dry-run`; publish via `n8n-node release` (npm) not raw
-`npm publish`; OIDC provenance; do not modify the eslint config; reviewers pull the latest npm
-version and require GitHub transparency; Docker harness via `n8n execute --id`. Layout: one
-resource folder per operation group under `nodes/Ups/resources/`, files under 800 lines
-(NFR-009). Versioning: conventional commits; version and CHANGELOG via release-it; npm and
-GitHub in lockstep (NFR-011).
+`incremental` OFF + `npm pack --dry-run`; releases via **release-please** (merge the release PR;
+the workflow publishes with provenance), never raw local `npm publish`; OIDC provenance; do not
+modify the eslint config; reviewers pull the latest npm version and require GitHub transparency;
+Docker harness via `n8n execute --id`; all GitHub Actions pin Node 24. Layout: one resource
+folder per operation group under `nodes/Ups/resources/`, files under 800 lines (NFR-009).
+Versioning: conventional commits; version and CHANGELOG via release-please; npm and GitHub in
+lockstep (NFR-011).
 
 ## Amendment Process
 Version bump (semver) + dated entry + re-run `/speckit.plan` to re-check downstream artifacts.
@@ -205,3 +207,4 @@ materially expanded guidance; PATCH for clarifications.
 |---------|------|--------|
 | 1.0.0 | 2026-06-18 | Initial ratification: filled for UPS (n8n-nodes-ups); added Principle 13 (International Scope Boundary); folded in auth contract, locked decisions, deltas, and NFRs. |
 | 1.1.0 | 2026-06-18 | Principle 10: added `mapUpsError` (ADR-0004) and `toMoney` to the test-first pure-core list (grill-with-docs design session). |
+| 1.2.0 | 2026-06-19 | Release toolchain changed from release-it to **release-please** (reverses the §13 delta that forbade it). Package manager stays npm. Releases now flow through an auto-generated release PR + `release-please.yml` (publish with provenance gated on `release_created`). All GitHub Actions pinned to Node 24. NFR-008/NFR-011 and gotchas §7 updated accordingly. |
