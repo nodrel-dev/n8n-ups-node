@@ -57,13 +57,35 @@ flowchart LR
     ups -->|"HTTPS + bearer token"| api["UPS REST API<br/>(your account and rates)"]
 ```
 
+### A typical workflow
+
+A common fulfillment pipeline wires the four operations together — clean the address, shop for a rate, buy the label, then hand the label binary to wherever it needs to go. Each step is a normal n8n node, so you can branch, filter, or store results at any point.
+
+```mermaid
+flowchart LR
+    trigger["Order trigger<br/>(Webhook / Sheets / DB)"] --> validate["UPS · Validate Address"]
+    validate --> rates["UPS · Get Rates"]
+    rates --> pick["Pick service<br/>(cheapest / fastest)"]
+    pick --> create["UPS · Create Shipment"]
+    create -->|"label binary"| save["Write Binary File<br/>/ Send Email"]
+    create -->|"tracking number"| notify["Notify customer<br/>/ update order"]
+    notify -.->|"later"| track["UPS · Track"]
+```
+
 ## Installation
 
 Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation. In n8n, go to **Settings → Community Nodes → Install** and enter `@nodrel-dev/n8n-nodes-ups`.
 
 ## Operations
 
-The node exposes three resources: **Tracking**, **Address**, and **Shipping**.
+The node exposes three resources — **Tracking**, **Address**, and **Shipping** — across four operations:
+
+| Resource | Operation | UPS endpoint | Returns |
+| --- | --- | --- | --- |
+| 📍 Tracking | **Track** | `GET /track/v1/details/{number}` | Current status + scan history, one inquiry number per item |
+| 🏠 Address | **Validate** | `POST /addressvalidation/v2/3` | Standardized `candidates[]`, `resolution`, residential/commercial `classification` |
+| 📦 Shipping | **Get Rates** | `POST /rating/v2409/Shoptimeintransit` | One item per eligible service — published + negotiated price, transit days, alerts |
+| 📦 Shipping | **Create** | `POST /shipments/v2409/ship` | Tracking number + charges, plus the label as binary (and the customs invoice PDF for international) |
 
 ```mermaid
 flowchart TD
