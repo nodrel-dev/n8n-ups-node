@@ -1,11 +1,11 @@
 /* eslint-disable @n8n/community-nodes/no-restricted-imports -- dev-only vitest tests; not part of the shipped node (files: dist only) */
 import { describe, it, expect } from 'vitest';
+import { type ParamGetter } from '../../nodes/Ups/resources/shipping/readParties';
 import {
 	readShipper,
 	loadShipperProfile,
-	type ParamGetter,
 	type ShipperProfile,
-} from '../../nodes/Ups/resources/shipping/shared';
+} from '../../nodes/Ups/resources/shipping/shipperProfile';
 
 // Mirrors n8n's getNodeParameter (name, fallback) contract, including the throw when both the
 // resolved value and the fallback are undefined (see readPackage.test.ts).

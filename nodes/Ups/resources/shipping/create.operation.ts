@@ -7,25 +7,21 @@ import {
 	type INodeExecutionData,
 	type INodeProperties,
 } from 'n8n-workflow';
-import { toUpsAddress } from '../../core/toUpsAddress';
-import { isInternational } from '../../core/isInternational';
-import { buildCommodities, type CommodityLineInput } from '../../core/buildCommodities';
-import { buildInternationalForms, type CustomsInput } from '../../core/buildInternationalForms';
-import { extractLabel, type LabelFormat } from '../../core/extractLabel';
-import { extractForms } from '../../core/extractForms';
-import { extractCharges } from '../../core/extractCharges';
+import { type CommodityLineInput } from '../../core/buildCommodities';
+import { type CustomsInput } from '../../core/buildInternationalForms';
+import { buildShipmentRequest } from '../../core/buildShipmentRequest';
+import { buildShipmentResult } from '../../core/buildShipmentResult';
+import { type LabelFormat } from '../../core/extractLabel';
 import { mapUpsError } from '../../core/mapUpsError';
+import { addressFields, packageFields, CURRENCY_OPTIONS } from './shippingFields';
 import {
-	addressFields,
-	packageFields,
 	readAddress,
 	readPackage,
-	loadShipperProfile,
-	readShipper,
-	CURRENCY_OPTIONS,
+	resolveShipmentParties,
 	type ParamGetter,
-	type ResolvedShipper,
-} from './shared';
+	type ResolvedParties,
+} from './readParties';
+import { loadShipperProfile } from './shipperProfile';
 
 const showOnlyForCreate = {
 	operation: ['create'],
@@ -102,89 +98,33 @@ function readCustoms(get: ParamGetter): CustomsInput {
 	};
 }
 
-function buildShipmentBody(
-	get: ParamGetter,
-	international: boolean,
-	resolvedShipper: ResolvedShipper,
-): IDataObject {
-	// Shipper (address + name + phone + account number) is already resolved with profile precedence
-	// (explicit field > profile > default, ADR-0005). The other parties read straight from fields.
-	const accountNumber = resolvedShipper.accountNumber;
-	const service = get('service', '03') as string;
-	const labelFormat = get('labelFormat', 'GIF') as string;
-
-	const shipper = resolvedShipper.address;
-	const shipTo = readAddress(get, 'shipTo');
-	const shipFrom = readAddress(get, 'shipFrom');
-	const hasShipFrom = shipFrom.addressLines.length > 0 || shipFrom.city.length > 0;
-	const effectiveShipFrom = hasShipFrom ? shipFrom : shipper;
-
-	const shipperName = resolvedShipper.name;
-	const shipToName = get('shipToName', '') as string;
+// Read the Create-specific party names/phones and customs inputs, then hand off to the pure
+// buildShipmentRequest core (fixture-tested for AttentionName mirroring, Type 01 billing, the
+// international InternationalForms branch, and thermal LabelStockSize). `parties` carries the
+// Effective Origin and profile-resolved Shipper from resolveShipmentParties, so this reader holds
+// only the fields unique to Create. customs/commodities are read unconditionally — both return safe
+// defaults and the core ignores them for domestic shipments.
+function buildShipmentBody(get: ParamGetter, parties: ResolvedParties): IDataObject {
+	const shipperName = parties.shipper.name;
+	// ShipFrom name defaults to the Shipper name when the user leaves it blank.
 	const shipFromName = (get('shipFromName', shipperName) as string) || shipperName;
-	const shipperPhone = resolvedShipper.phone;
-	const shipToPhone = get('shipToPhone', '') as string;
 
-	// UPS requires an AttentionName on each party for international shipments — omitting ShipFrom's
-	// returns 120301 "Missing or invalid ship from attention name" (verified live CIE). Mirror the
-	// party Name into AttentionName when present; harmless on domestic, mandatory cross-border.
-	const shipment: IDataObject = {
-		Description: 'Shipment',
-		Shipper: {
-			Name: shipperName,
-			...(shipperName ? { AttentionName: shipperName } : {}),
-			ShipperNumber: accountNumber,
-			...(shipperPhone ? { Phone: { Number: shipperPhone } } : {}),
-			Address: toUpsAddress(shipper),
+	return buildShipmentRequest({
+		accountNumber: parties.accountNumber,
+		service: get('service', '03') as string,
+		labelFormat: get('labelFormat', 'GIF') as string,
+		international: parties.international,
+		shipper: { address: parties.shipper.address, name: shipperName, phone: parties.shipper.phone },
+		shipTo: {
+			address: parties.shipTo,
+			name: get('shipToName', '') as string,
+			phone: get('shipToPhone', '') as string,
 		},
-		ShipTo: {
-			Name: shipToName,
-			...(shipToName ? { AttentionName: shipToName } : {}),
-			...(shipToPhone ? { Phone: { Number: shipToPhone } } : {}),
-			Address: toUpsAddress(shipTo),
-		},
-		ShipFrom: {
-			Name: shipFromName,
-			...(shipFromName ? { AttentionName: shipFromName } : {}),
-			Address: toUpsAddress(effectiveShipFrom),
-		},
-		// Billing: shipper pays transportation (Type 01). International duties are DDU — no Type 02.
-		PaymentInformation: {
-			ShipmentCharge: { Type: '01', BillShipper: { AccountNumber: accountNumber } },
-		},
-		// Request negotiated rates so the response carries NegotiatedRateCharges (the actually-billed
-		// cost) alongside published — same mechanism as Get Rates; presence of the tag is the trigger.
-		// extractCharges surfaces both; negotiated stays null when the account isn't entitled on the lane.
-		ShipmentRatingOptions: { NegotiatedRatesIndicator: '' },
-		Service: { Code: service },
-		Package: {
-			Packaging: { Code: '02' },
-			...readPackage(get),
-		},
-	};
-
-	if (international) {
-		const commodities = buildCommodities(readCommodities(get));
-		shipment.ShipmentServiceOptions = {
-			InternationalForms: buildInternationalForms(readCustoms(get), commodities),
-		};
-	}
-
-	// GIF is an image label and needs no stock size; the thermal formats (ZPL/EPL/SPL) are rejected
-	// with 9120244 "Missing label specification label stock size" unless LabelStockSize is supplied.
-	// 4x6 in is the standard thermal label (Height 6, Width 4). Verified live CIE.
-	const labelSpecification: IDataObject = { LabelImageFormat: { Code: labelFormat } };
-	if (labelFormat !== 'GIF') {
-		labelSpecification.LabelStockSize = { Height: '6', Width: '4' };
-	}
-
-	return {
-		ShipmentRequest: {
-			Request: { RequestOption: 'nonvalidate' },
-			Shipment: shipment,
-			LabelSpecification: labelSpecification,
-		},
-	};
+		shipFrom: { address: parties.effectiveShipFrom, name: shipFromName },
+		package: readPackage(get),
+		customs: readCustoms(get),
+		commodities: readCommodities(get),
+	});
 }
 
 // preSend: enforce the two boundary invariants (FR-010/FR-014) BEFORE any UPS call, then assemble
@@ -200,36 +140,26 @@ async function createPreSend(
 	const node = this.getNode();
 	const get: ParamGetter = (name, fallback) => this.getNodeParameter(name, fallback as never);
 
-	// Resolve Shipper (incl. account number + country) with profile precedence BEFORE the
-	// internationality check, so a profile-supplied Shipper country correctly drives it (ADR-0005).
+	// resolveShipmentParties resolves the Shipper (account number + country) with profile precedence
+	// BEFORE the internationality check, so a profile-supplied Shipper country correctly drives it
+	// (ADR-0005), and shares the Effective Origin sequence with Get Rates (ADR-0003).
 	const profile = await loadShipperProfile(this);
-	const resolvedShipper = readShipper(get, profile);
-	const accountNumber = resolvedShipper.accountNumber;
-	if (!accountNumber) {
+	const parties = resolveShipmentParties(get, profile);
+	if (!parties.accountNumber) {
 		throw new NodeOperationError(node, 'An account number is required to create a shipment.', {
 			description:
 				'Enter your UPS account number (ShipperNumber), or attach a UPS Shipper Profile credential that supplies one.',
 		});
 	}
 
-	const shipper = resolvedShipper.address;
-	const shipTo = readAddress(get, 'shipTo');
-	const shipFrom = readAddress(get, 'shipFrom');
-	const hasShipFrom = shipFrom.addressLines.length > 0 || shipFrom.city.length > 0;
-	const international = isInternational({
-		shipFrom: hasShipFrom ? shipFrom : shipper,
-		shipper,
-		shipTo,
-	});
-
-	if (international && readCommodities(get).length === 0) {
+	if (parties.international && readCommodities(get).length === 0) {
 		throw new NodeOperationError(
 			node,
 			'International shipments require at least one customs commodity line.',
 		);
 	}
 
-	requestOptions.body = buildShipmentBody(get, international, resolvedShipper);
+	requestOptions.body = buildShipmentBody(get, parties);
 	return requestOptions;
 }
 
@@ -245,36 +175,23 @@ async function createPostReceive(
 	}
 
 	const labelFormat = this.getNodeParameter('labelFormat', 'GIF') as string;
-	const label = extractLabel(response.body as object, labelFormat as LabelFormat);
-	const forms = extractForms(response.body as object);
-	const charges = extractCharges(response.body as object);
+	// All response assembly (label/form/charge extraction + the domestic-vs-international branch) lives
+	// in the pure buildShipmentResult core; postReceive only decodes each base64 part into n8n binary.
+	const result = buildShipmentResult(response.body as object, labelFormat as LabelFormat);
 
 	const binary: INodeExecutionData['binary'] = {};
-	if (label.labels[0]) {
-		const l = label.labels[0];
-		binary.label = await this.helpers.prepareBinaryData(
-			Buffer.from(l.base64, 'base64'),
-			l.filename,
-			l.mime,
-		);
-	}
-	if (forms[0]) {
-		binary.customsInvoice = await this.helpers.prepareBinaryData(
-			Buffer.from(forms[0].base64, 'base64'),
-			forms[0].filename,
-			forms[0].mime,
+	for (const part of result.binaryParts) {
+		binary[part.key] = await this.helpers.prepareBinaryData(
+			Buffer.from(part.base64, 'base64'),
+			part.filename,
+			part.mime,
 		);
 	}
 
 	return [
 		{
-			json: {
-				shipmentId: label.shipmentId,
-				trackingNumbers: label.labels.map((x) => x.trackingNumber),
-				international: forms.length > 0,
-				charges,
-			},
-			binary: Object.keys(binary).length > 0 ? binary : undefined,
+			json: result.json as unknown as INodeExecutionData['json'],
+			binary: result.binaryParts.length > 0 ? binary : undefined,
 		},
 	];
 }
