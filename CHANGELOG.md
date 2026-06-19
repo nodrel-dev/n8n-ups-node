@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.3.1...v0.4.0) (2026-06-19)
+
+
+### Features
+
+* **shipping:** add optional UPS Shipper Profile credential (FE-001) ([#17](https://github.com/nodrel-dev/n8n-ups-node/issues/17)) ([7dd3001](https://github.com/nodrel-dev/n8n-ups-node/commit/7dd3001c4a35ddfe7c5d8aa02924273702abb361))
+
 ## [0.3.1](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.3.0...v0.3.1) (2026-06-19)
 
 
