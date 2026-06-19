@@ -21,7 +21,7 @@
       },
       "id": "ups-validate",
       "name": "UPS Validate",
-      "type": "n8n-nodes-ups.ups",
+      "type": "@nodrel-dev/n8n-nodes-ups.ups",
       "typeVersion": 1,
       "position": [240, 0],
       "credentials": {
