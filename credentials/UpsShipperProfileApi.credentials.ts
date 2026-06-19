@@ -20,7 +20,11 @@ import type { Icon, ICredentialType, INodeProperties } from 'n8n-workflow';
 export class UpsShipperProfileApi implements ICredentialType {
 	name = 'upsShipperProfileApi';
 
-	displayName = 'UPS Shipper Profile API';
+	// Picker-facing label. n8n's `cred-class-field-display-name-missing-api` lint rule requires the
+	// displayName to END with 'API', so we keep that suffix but lead with '(Optional)'. The picker shows
+	// only this name (the in-form "no API key required" notice isn't visible there yet), and the missing
+	// signal the user reacted to was optionality. (UX finding 2-Cred.3 / Recipe B.)
+	displayName = 'UPS Shipper Profile (Optional) API';
 
 	icon: Icon = 'file:ups.svg';
 
@@ -29,12 +33,19 @@ export class UpsShipperProfileApi implements ICredentialType {
 
 	properties: INodeProperties[] = [
 		{
+			displayName:
+				'Optional. Stores reusable shipper details (name, address, phone, account number) so they are not re-typed on every shipment — no API key required. An explicit field on the node always overrides what you set here.',
+			name: 'profileNotice',
+			type: 'notice',
+			default: '',
+		},
+		{
 			displayName: 'Account Number',
 			name: 'accountNumber',
 			type: 'string',
 			default: '',
 			description:
-				'UPS account number (ShipperNumber). Must match the country registered for this account, or UPS rejects the call (111617 Rate / 120120 Ship).',
+				'UPS account number (ShipperNumber). Must match the country registered for this account, or UPS rejects the request.',
 		},
 		{
 			displayName: 'Shipper Name',

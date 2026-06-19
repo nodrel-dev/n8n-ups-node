@@ -36,7 +36,15 @@ export class Ups implements INodeType {
 			// Optional, non-auth config credential (ADR-0005). Holds reusable Shipper fields + account
 			// number; read at run time in the Get Rates / Create preSend and merged into the Shipper
 			// block (explicit field > profile > default). Only `upsOAuth2Api` authenticates requests.
-			{ name: 'upsShipperProfileApi', required: false, testedBy: 'upsShipperProfileTest' },
+			// `displayName` overrides the per-credential label in the node panel (INodeCredentialDescription),
+			// so this row reads "Shipper Profile (Optional)" instead of a second generic "Credential" header —
+			// it is config, not auth (ADR-0005). The OAuth entry has no override, so it stays "Credential".
+			{
+				name: 'upsShipperProfileApi',
+				displayName: 'Shipper Profile (Optional)',
+				required: false,
+				testedBy: 'upsShipperProfileTest',
+			},
 		],
 		requestDefaults: {
 			// baseURL is environment-derived from the SAME credential field that drives the token URL,

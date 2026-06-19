@@ -181,3 +181,26 @@ CIE quirk: the Track CIE endpoint returns a **canned `DELIVERED`** response for 
 number (including the all-zeros `1Z00000000000000000` used by the credential test). So a valid token
 → HTTP 200 (test PASS); `401/403` → bad client id/secret or wrong environment. There is no genuine
 "not found" path to special-case in CIE (resolves ADR-0002's not-found VERIFY-LIVE question).
+
+## §14 — No non-credential primitive for reusable, node-bound config (verified live 2026-06-19)
+
+If a node needs config a user sets **once and reuses across workflows** AND that **binds to the node**,
+the **credential store is the only n8n mechanism that fits** — and it ALWAYS renders credential UI chrome
+(a "Set up credential" button + picker dropdown) you cannot theme away. Cross-checked against current n8n
+docs:
+- **Variables (`$vars`)** — flat strings, read-only, set only via the UI; do NOT bind to a node (the user
+  hand-types `={{ $vars.x }}` into each field); gated behind a paid plan → a community node can't depend
+  on it.
+- **Data Tables** — not readable from inside a community node at run time (only via the built-in Data
+  Table node, the REST API with a key, or MCP).
+- **Node parameters** — bind to the node but live in the workflow JSON (no reuse; account numbers/secrets
+  land in plaintext).
+
+You CAN soften, but not remove, the credential framing: `INodeCredentialDescription.displayName` on the
+node's `credentials[]` entry relabels that row's header (e.g. "Shipper Profile (Optional)" instead of
+"Credential"), and an in-form `notice` can say "optional, no API key". But the **"Set up credential"
+button text and the picker dropdown are FIXED chrome** — no node-level API changes them (verified live in
+the harness, n8n 2.25.7, NOT just from docs). So a non-auth "config credential" (e.g. the shipper profile,
+ADR-0005) will always *look* like a credential; budget for that in UX rather than expecting to hide it.
+Credential `displayName` must end with `API` (`cred-class-field-display-name-missing-api` lint rule), so a
+"(Optional)" hint has to precede that suffix, e.g. `UPS Shipper Profile (Optional) API`.

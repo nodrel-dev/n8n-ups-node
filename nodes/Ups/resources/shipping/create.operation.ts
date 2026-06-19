@@ -28,6 +28,11 @@ const showOnlyForCreate = {
 	resource: ['shipping'],
 };
 
+// Visibility-only gate for the Customs / Sold To / Commodities fields (Recipe E). resolveShipmentParties'
+// runtime isInternational predicate stays authoritative (ADR-0003) — this `international` toggle controls
+// field visibility, not request logic, so a genuine cross-border lane is still validated if it's off.
+const showOnlyForCreateIntl = { ...showOnlyForCreate, international: [true] };
+
 // Create is the constitution's permitted exception for binary + customs assembly (Principle 5,
 // ADR-0004). n8n bypasses declarative routing entirely once a node defines an `execute()` method, so
 // to keep Track/Validate/Rate declarative the WHOLE node stays declarative — Create realizes the
@@ -156,6 +161,10 @@ async function createPreSend(
 		throw new NodeOperationError(
 			node,
 			'International shipments require at least one customs commodity line.',
+			{
+				description:
+					'The origin and destination countries differ. Turn on "Is International Shipment" to reveal the Customs, Sold To, and Commodities fields, then add at least one commodity line.',
+			},
 		);
 	}
 
@@ -215,13 +224,14 @@ export const createOperationDescription: INodeProperties[] = [
 		// valid on every lane — availability depends on origin/destination and account entitlement —
 		// so an unlisted code can still be supplied via an expression. Stored value is the raw code.
 		options: [
+			// Most-used services lead so users aren't scanning a 28-item list ordered by raw code.
+			{ name: 'Ground (03)', value: '03' },
 			{ name: 'Next Day Air (01)', value: '01' },
 			{ name: '2nd Day Air (02)', value: '02' },
-			{ name: 'Ground (03)', value: '03' },
+			{ name: '3 Day Select (12)', value: '12' },
 			{ name: 'Express (07)', value: '07' },
 			{ name: 'Expedited (08)', value: '08' },
 			{ name: 'UPS Standard (11)', value: '11' },
-			{ name: '3 Day Select (12)', value: '12' },
 			{ name: 'Next Day Air Saver (13)', value: '13' },
 			{ name: 'Next Day Air Early (14)', value: '14' },
 			{ name: 'Worldwide Economy DDU (17)', value: '17' },
@@ -250,7 +260,7 @@ export const createOperationDescription: INodeProperties[] = [
 	},
 	{
 		displayName:
-			'The Shipper fields below (and Account Number) can be supplied by an optional UPS Shipper Profile credential. An explicit value here always overrides the profile; leave a field blank to inherit it from the profile.',
+			'Tip: attach a UPS Shipper Profile credential to auto-fill the Shipper fields and Account Number. Any value you enter here overrides the profile.',
 		name: 'shipperProfileNoticeCreate',
 		type: 'notice',
 		default: '',
@@ -286,22 +296,32 @@ export const createOperationDescription: INodeProperties[] = [
 		name: 'labelFormat',
 		type: 'options',
 		options: [
-			{ name: 'EPL', value: 'EPL' },
-			{ name: 'GIF', value: 'GIF' },
-			{ name: 'SPL', value: 'SPL' },
-			{ name: 'ZPL', value: 'ZPL' },
+			{ name: 'GIF (Image — View or Attach Anywhere)', value: 'GIF' },
+			{ name: 'ZPL (Zebra Thermal Printer)', value: 'ZPL' },
+			{ name: 'EPL (Eltron Thermal Printer)', value: 'EPL' },
+			{ name: 'SPL (Star Thermal Printer)', value: 'SPL' },
 		],
 		default: 'GIF',
 		displayOptions: { show: showOnlyForCreate },
-		description: 'Label image format. No PDF label is offered (delta 13.6).',
+		description:
+			'Label image format. GIF is a screen-friendly image; ZPL, EPL, and SPL are thermal label-printer formats. PDF labels are not available.',
+	},
+	{
+		displayName: 'Is International Shipment',
+		name: 'international',
+		type: 'boolean',
+		default: false,
+		displayOptions: { show: showOnlyForCreate },
+		description:
+			'Whether this shipment is international (the origin and destination countries differ). Turning it on reveals the Customs, Sold To, and Commodities fields; the node still validates internationality from the addresses at run time, so a genuine cross-border lane is caught even if this is left off.',
 	},
 	{
 		displayName:
-			'The Customs, Sold To, and Commodities fields below are REQUIRED when the origin and destination countries differ (international). Leave them empty for domestic shipments — sensible defaults are applied automatically.',
+			'Customs details for an international shipment (the origin and destination countries differ). At least one commodity line is required; the other fields apply sensible defaults.',
 		name: 'customsNotice',
 		type: 'notice',
 		default: '',
-		displayOptions: { show: showOnlyForCreate },
+		displayOptions: { show: showOnlyForCreateIntl },
 	},
 	{
 		// International customs scalars, grouped so domestic users see one collapsed row instead of
@@ -312,7 +332,7 @@ export const createOperationDescription: INodeProperties[] = [
 		type: 'collection',
 		placeholder: 'Add Customs Field',
 		default: {},
-		displayOptions: { show: showOnlyForCreate },
+		displayOptions: { show: showOnlyForCreateIntl },
 		description: 'Commercial-invoice details for international shipments',
 		options: [
 			{
@@ -357,7 +377,7 @@ export const createOperationDescription: INodeProperties[] = [
 	...addressFields({
 		prefix: 'soldTo',
 		label: 'Sold To',
-		show: showOnlyForCreate,
+		show: showOnlyForCreateIntl,
 		includeName: true,
 		hint: 'International shipments only. The party the goods are sold to (commercial invoice).',
 	}),
@@ -367,7 +387,7 @@ export const createOperationDescription: INodeProperties[] = [
 		type: 'fixedCollection',
 		typeOptions: { multipleValues: true },
 		default: {},
-		displayOptions: { show: showOnlyForCreate },
+		displayOptions: { show: showOnlyForCreateIntl },
 		description: 'Customs commodity lines (international only)',
 		options: [
 			{

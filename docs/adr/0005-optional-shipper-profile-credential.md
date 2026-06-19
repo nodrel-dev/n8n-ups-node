@@ -20,6 +20,11 @@ account number included — quickly and correctly.
   Data Table node in a workflow, the REST API with an API key, or MCP). Using one would force the
   node to HTTP back into n8n's own API with a user-supplied key — brittle, an extra secret, against
   the intended pattern. Rejected as an *in-node* mechanism.
+- **n8n Variables (`$vars`)**: instance-wide key-values referenced by expression. Rejected as the
+  profile mechanism — the docs confirm variables are **flat strings, read-only, set only via the UI**
+  (no structured profile object), they do **not bind to the node** (the user must hand-type
+  `={{ $vars.x }}` into every field, so there is no "swap the block" UX), and Variables is gated behind
+  a paid n8n plan, so a community node cannot depend on it being present (re-cross-checked 2026-06-19).
 - **Runtime fill via a second credential** (chosen): the credential store is the n8n-native place
   for reusable, per-environment config, it keeps the account number out of the workflow JSON, and it
   is readable at run time via `getCredentials`.
@@ -73,6 +78,35 @@ guard in each `preSend` still throws a clear `NodeOperationError` when neither t
 supplies one, and UPS validates the rest of the address as before. Net effect: an existing workflow
 that already fills these behaves identically; the only change is that the editor no longer shows the
 red "required" nudge on Shipper Address Line 1.
+
+## Accepted cost: the credential UI chrome (2026-06-19)
+
+Choosing a credential means the node panel renders the profile with n8n's standard credential UI: a
+"Credential"-style row with a picker dropdown and a **"Set up credential"** button. A second
+credential-looking box is misleading because the profile is *config, not auth* (UX finding 2-Cred.3,
+`docs/cognitive-load-audit.md`).
+
+This is an **accepted, irreducible cost** of the mechanism. A re-cross-check of the n8n docs (2026-06-19,
+on top of the cascade-fill / Data Tables / Variables analysis above) confirmed there is **no** n8n
+primitive that is simultaneously *reusable across workflows* AND *bound to the node* without being a
+credential: Variables don't bind and are gated/flat-string; Data Tables aren't readable in-node; plain
+node parameters bind but aren't reusable and would put the account number in the workflow JSON in
+plaintext (defeating the encryption rationale above). The credential is the **only** mechanism that
+satisfies reusable + node-bound + encrypted, so its chrome comes with it. See gotchas §14.
+
+**Mitigations applied — the most n8n allows:**
+- The per-credential `displayName` on the node's `credentials[]` entry
+  (`INodeCredentialDescription.displayName`) relabels the panel row from a generic "Credential" header to
+  **"Shipper Profile (Optional)"**; the `upsOAuth2Api` entry keeps the default "Credential" header.
+- The credential's own `displayName` is **"UPS Shipper Profile (Optional) API"** — the trailing `API` is
+  forced by the `cred-class-field-display-name-missing-api` lint rule, so it can't be dropped — which also
+  signals optionality in the credential picker.
+- An in-form `notice` on the credential states it is optional and needs no API key.
+- **NOT themeable:** the "Set up credential" button text and the picker dropdown are fixed n8n chrome —
+  no node-level API changes them. Verified empirically in the live harness (n8n 2.25.7), not just from docs.
+
+**Revisit trigger:** if n8n later exposes node-bound reusable config without credential chrome (or lets
+node code read a Data Table / Variable at run time), revisit toward that and drop the second credential.
 
 ## Consequences / revisit triggers
 
