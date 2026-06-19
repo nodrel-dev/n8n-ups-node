@@ -19,7 +19,9 @@ const showOnlyForRates = {
 
 // preSend builds the RateRequest and enforces the two boundary invariants BEFORE any UPS call
 // (FR-010/FR-014): an account number is mandatory, and an international lane requires a customs value.
-// Boundary failures throw NodeOperationError (never NodeApiError — data-model.md).
+// We throw NodeOperationError, but n8n's declarative routing rewraps any preSend throw into
+// NodeApiError with httpCode='none' (verified live) — message preserved; httpCode='none' marks a
+// pre-call boundary failure vs a real UPS HTTP error.
 async function ratesPreSend(
 	this: IExecuteSingleFunctions,
 	requestOptions: IHttpRequestOptions,
