@@ -1,0 +1,45 @@
+{
+  "name": "UPS · Gate 3 · Get Rates",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-rates",
+      "name": "Execute Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "resource": "shipping",
+        "operation": "getRates",
+        "accountNumber": "0C395V",
+        "shipperAddressLine1": "1 Yonge St",
+        "shipperCity": "Toronto",
+        "shipperStateProvinceCode": "ON",
+        "shipperPostalCode": "M5E1E5",
+        "shipperCountryCode": "CA",
+        "shipToAddressLine1": "555 W Hastings St",
+        "shipToCity": "Vancouver",
+        "shipToStateProvinceCode": "BC",
+        "shipToPostalCode": "V6B4N6",
+        "shipToCountryCode": "CA",
+        "weight": 2,
+        "weightUnit": "KGS"
+      },
+      "id": "ups-rates",
+      "name": "UPS Get Rates",
+      "type": "n8n-nodes-ups.ups",
+      "typeVersion": 1,
+      "position": [240, 0],
+      "credentials": {
+        "upsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "UPS CIE" }
+      }
+    }
+  ],
+  "connections": {
+    "Execute Workflow": { "main": [[{ "node": "UPS Get Rates", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}

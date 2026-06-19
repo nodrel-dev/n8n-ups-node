@@ -1,0 +1,25 @@
+{
+	"ShipmentResponse": {
+		"Response": { "ResponseStatus": { "Code": "1", "Description": "Success" } },
+		"ShipmentResults": {
+			"ShipmentIdentificationNumber": "1Z12345E6605272234",
+			"PackageResults": [
+				{
+					"TrackingNumber": "1Z12345E6605272234",
+					"ShippingLabel": {
+						"ImageFormat": { "Code": "ZPL", "Description": "ZPL" },
+						"GraphicImage": "XlhBflBXMTAwMA=="
+					}
+				}
+			],
+			"Form": {
+				"Code": "01",
+				"Description": "All Requested International Forms",
+				"Image": {
+					"ImageFormat": { "Code": "PDF", "Description": "PDF" },
+					"GraphicImage": "JVBERi0xLjQKJSBQ"
+				}
+			}
+		}
+	}
+}

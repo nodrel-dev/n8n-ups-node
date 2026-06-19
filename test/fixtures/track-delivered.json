@@ -1,0 +1,56 @@
+{
+	"trackResponse": {
+		"shipment": [
+			{
+				"inquiryNumber": "1Z023E2X0214323462",
+				"package": [
+					{
+						"trackingNumber": "1Z023E2X0214323462",
+						"currentStatus": {
+							"type": "D",
+							"code": "011",
+							"statusCode": "003",
+							"description": "Delivered"
+						},
+						"service": { "code": "003", "description": "UPS Ground" },
+						"deliveryDate": [{ "type": "DEL", "date": "20260615" }],
+						"activity": [
+							{
+								"date": "20260615",
+								"time": "100742",
+								"status": {
+									"type": "D",
+									"code": "011",
+									"description": "Delivered"
+								},
+								"location": {
+									"address": {
+										"city": "Wayne",
+										"stateProvince": "NJ",
+										"countryCode": "US"
+									}
+								}
+							},
+							{
+								"date": "20260614",
+								"time": "071356",
+								"status": {
+									"type": "I",
+									"code": "OR",
+									"description": "Out For Delivery"
+								},
+								"location": {
+									"address": {
+										"city": "Wayne",
+										"stateProvince": "NJ",
+										"countryCode": "US"
+									}
+								}
+							}
+						]
+					}
+				]
+			}
+		]
+	}
+}
