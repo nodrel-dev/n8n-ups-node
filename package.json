@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-ups",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "n8n community node for UPS: rating, tracking, and address validation via the UPS REST API.",
   "license": "MIT",
   "homepage": "https://github.com/nodrel-dev/n8n-nodes-ups",
