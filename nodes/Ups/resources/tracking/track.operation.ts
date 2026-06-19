@@ -78,6 +78,15 @@ export const trackOperationOption = {
 		request: {
 			method: 'GET' as const,
 			url: '=/track/v1/details/{{$parameter.trackingNumber}}',
+			// UPS Track v1 REQUIRES both headers or it 400s with TV0011 "Missing transactionSrc"
+			// + TV0001 "Missing transId" (verified live CIE 2026-06-19 — gotchas §13). transId is a
+			// caller-set unique transaction id (≤32 chars); transactionSrc identifies the client.
+			// Track is the only one of the four UPS APIs that requires these (Rate/Validate/Ship
+			// accept the calls without them).
+			headers: {
+				transId: "={{ 'n8n-' + $now.toMillis() }}",
+				transactionSrc: 'n8n-nodes-ups',
+			},
 			ignoreHttpStatusErrors: true,
 		},
 		output: {

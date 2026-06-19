@@ -105,6 +105,32 @@ do. Don't trust the error text: `111546` reads like bad data but means a missing
 
 Two more rating realities confirmed the same day:
 - Empty `ShipmentRatingOptions.NegotiatedRatesIndicator: ''` DOES return `NegotiatedRateCharges`
-  (presence of the tag is the trigger, not a `Y` value).
+  (presence of the tag is the trigger, not a `Y` value) — **but only when the account is actually
+  entitled to negotiated rates on that lane**. A different test account / lane returns published
+  rates only with the tag present (verified CIE 2026-06-19); absence of `NegotiatedRateCharges` is
+  an account-entitlement fact, not a node bug. `flattenRates` correctly emits the request-level "no
+  negotiated rates" alert in that case.
 - The account's (`ShipperNumber`) registered country must equal the Shipper address country, or
   UPS rejects with **`111617`** (Rate) / **`120120`** (Ship), regardless of the rest of the payload.
+  Note (verified CIE 2026-06-19): Rating `Shoptimeintransit` is **lenient** here — a US shipper got
+  HTTP 200 — while **Ship enforces it** and returned `120120`. So a clean rate quote does NOT
+  guarantee Create will accept the same Shipper; the Create Shipper address/country must match the
+  account's UPS registration.
+
+## §13 — UPS Track v1 requires `transId` + `transactionSrc` headers (verified CIE 2026-06-19)
+
+`GET /api/track/v1/details/{number}` **400s** without two request headers, with a misleading
+"missing field" envelope:
+- no `transactionSrc` → **`TV0011` "Missing transactionSrc"**
+- no `transId` → **`TV0001` "Missing transId"**
+
+`transId` is a caller-set unique transaction id (≤32 chars); `transactionSrc` identifies the client
+app. Track is the **only** one of the four UPS APIs that requires them — Rate, Validate, and Ship
+all accept calls without them. The node sets `transactionSrc: 'n8n-nodes-ups'` and a per-request
+`transId` (`'n8n-' + $now.toMillis()`) in `track.operation.ts`; the credential `test` (a Track
+probe) sets a static pair. Omitting them silently breaks BOTH Track and the credential Test button.
+
+CIE quirk: the Track CIE endpoint returns a **canned `DELIVERED`** response for ANY well-formed `1Z`
+number (including the all-zeros `1Z00000000000000000` used by the credential test). So a valid token
+→ HTTP 200 (test PASS); `401/403` → bad client id/secret or wrong environment. There is no genuine
+"not found" path to special-case in CIE (resolves ADR-0002's not-found VERIFY-LIVE question).

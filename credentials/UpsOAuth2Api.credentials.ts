@@ -93,6 +93,14 @@ export class UpsOAuth2Api implements ICredentialType {
 			baseURL: `={{ $credentials.environment === "production" ? "${API_HOST.production}" : "${API_HOST.sandbox}" }}`,
 			url: '/api/track/v1/details/1Z00000000000000000',
 			method: 'GET',
+			// Track v1 requires both headers or it 400s (TV0011/TV0001) — without them the test would
+			// fail even with valid credentials (verified live CIE 2026-06-19, gotchas §13). CIE returns
+			// a canned 200 for any well-formed 1Z number, so a valid token → 200 PASS; 401/403 → bad
+			// client id/secret or wrong environment.
+			headers: {
+				transId: 'n8n-nodes-ups-credtest',
+				transactionSrc: 'n8n-nodes-ups',
+			},
 		},
 	};
 }
