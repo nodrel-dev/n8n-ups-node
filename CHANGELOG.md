@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.2.0...v0.2.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* **release:** set empty component for single-package release-please ([#7](https://github.com/nodrel-dev/n8n-nodes-ups/issues/7)) ([e553097](https://github.com/nodrel-dev/n8n-nodes-ups/commit/e5530978a7ac4d4cf24d7a1c852c0f5a414fc605))
+
 ## [0.2.0](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.1.0...v0.2.0) (2026-06-19)
 
 
