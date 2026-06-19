@@ -10,7 +10,16 @@ import { toUpsAddress } from '../../core/toUpsAddress';
 import { flattenRates } from '../../core/flattenRates';
 import { isInternational } from '../../core/isInternational';
 import { mapUpsError } from '../../core/mapUpsError';
-import { addressFields, readAddress, readPackage, packageFields, type ParamGetter } from './shared';
+import {
+	addressFields,
+	readAddress,
+	readPackage,
+	packageFields,
+	loadShipperProfile,
+	readShipper,
+	CURRENCY_OPTIONS,
+	type ParamGetter,
+} from './shared';
 
 const showOnlyForRates = {
 	operation: ['getRates'],
@@ -29,14 +38,20 @@ async function ratesPreSend(
 	const node = this.getNode();
 	// IExecuteSingleFunctions.getNodeParameter is (name, fallback) — bridge it to the shared readers.
 	const get: ParamGetter = (name, fallback) => this.getNodeParameter(name, fallback as never);
-	const accountNumber = (get('accountNumber', '') as string).trim();
+
+	// Shipper (address + account number) resolves explicit field > Shipper Profile credential >
+	// default (ADR-0005). loadShipperProfile returns null when no profile is attached.
+	const profile = await loadShipperProfile(this);
+	const resolvedShipper = readShipper(get, profile);
+	const accountNumber = resolvedShipper.accountNumber;
 	if (!accountNumber) {
 		throw new NodeOperationError(node, 'An account number is required to request rates.', {
-			description: 'Enter your UPS account number (ShipperNumber) on the Get Rates operation.',
+			description:
+				'Enter your UPS account number (ShipperNumber) on the Get Rates operation, or attach a UPS Shipper Profile credential that supplies one.',
 		});
 	}
 
-	const shipper = readAddress(get, 'shipper');
+	const shipper = resolvedShipper.address;
 	const shipTo = readAddress(get, 'shipTo');
 	const shipFrom = readAddress(get, 'shipFrom');
 	const hasShipFrom = shipFrom.addressLines.length > 0 || shipFrom.city.length > 0;
@@ -112,17 +127,30 @@ export const getRatesOperationDescription: INodeProperties[] = [
 		displayName: 'Account Number',
 		name: 'accountNumber',
 		type: 'string',
-		required: true,
 		default: '',
 		displayOptions: { show: showOnlyForRates },
 		description:
-			'Your UPS account number (ShipperNumber). Required; also requests negotiated rates.',
+			'Your UPS account number (ShipperNumber). Required (also requests negotiated rates) — leave blank only if a UPS Shipper Profile credential supplies it.',
 	},
-	...addressFields({ prefix: 'shipper', label: 'Shipper', show: showOnlyForRates, required: true }),
+	{
+		displayName:
+			'The Shipper fields below (and Account Number) can be supplied by an optional UPS Shipper Profile credential. An explicit value here always overrides the profile; leave a field blank to inherit it from the profile.',
+		name: 'shipperProfileNoticeRates',
+		type: 'notice',
+		default: '',
+		displayOptions: { show: showOnlyForRates },
+	},
+	...addressFields({
+		prefix: 'shipper',
+		label: 'Shipper',
+		show: showOnlyForRates,
+		countryDefault: '',
+	}),
 	...addressFields({
 		prefix: 'shipFrom',
-		label: 'Ship From (optional, defaults to Shipper)',
+		label: 'Ship From',
 		show: showOnlyForRates,
+		hint: 'Optional. Defaults to the Shipper address when left blank.',
 	}),
 	...addressFields({
 		prefix: 'shipTo',
@@ -133,10 +161,19 @@ export const getRatesOperationDescription: INodeProperties[] = [
 	}),
 	...packageFields(showOnlyForRates),
 	{
+		displayName:
+			'The customs fields below are REQUIRED when the origin and destination countries differ (international). Leave them at their defaults for domestic shipments.',
+		name: 'ratesCustomsNotice',
+		type: 'notice',
+		default: '',
+		displayOptions: { show: showOnlyForRates },
+	},
+	{
 		displayName: 'Customs Value',
 		name: 'customsValue',
 		type: 'number',
 		default: 0,
+		typeOptions: { minValue: 0 },
 		displayOptions: { show: showOnlyForRates },
 		description:
 			'Declared value of goods. Required when origin and destination countries differ (international).',
@@ -144,10 +181,12 @@ export const getRatesOperationDescription: INodeProperties[] = [
 	{
 		displayName: 'Customs Currency',
 		name: 'customsCurrency',
-		type: 'string',
+		type: 'options',
+		options: CURRENCY_OPTIONS,
 		default: 'USD',
 		displayOptions: { show: showOnlyForRates },
-		description: 'Currency code for the customs value',
+		description:
+			'Currency for the customs value. Pick a common code, or use an expression to set any ISO 4217 code.',
 	},
 ];
 

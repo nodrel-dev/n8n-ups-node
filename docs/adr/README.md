@@ -11,6 +11,16 @@ For the synthesized picture, start with the [System Overview](../system-overview
 | [0002](0002-credential-test-track-notfound-is-pass.md) | The credential test is an authenticated **Track probe**; reaching UPS's Track layer (even a "not found") counts as a pass, so the test validates auth without a real shipment. | Active |
 | [0003](0003-international-trigger-is-runtime-not-displayoptions.md) | The international (Effective Origin ≠ ShipTo) trigger is a **runtime predicate** (`isInternational`), not `displayOptions` field visibility, so Rate and Create can never disagree on what counts as cross-border. | Active |
 | [0004](0004-error-mapping-via-postreceive-not-default.md) | Surface UPS errors through a `postReceive` mapper (`mapUpsError`) with `ignoreHttpStatusErrors: true`, not n8n's default error handling, so the UPS `code`/`message` reach the operator verbatim. | Active |
+| [0005](0005-optional-shipper-profile-credential.md) | Add an **optional, non-auth `UpsShipperProfile`** credential that fills the Shipper block at run time (precedence: explicit field > profile > default). Promotes FE-001; amends Principle 6 (v1.4.0). | Active |
+
+## Proposed / backlog
+
+Not decisions yet — ideas captured for later. Promoting one means writing a real ADR here (and a
+constitution amendment if it touches a Principle).
+
+| Idea | Summary | Would require |
+| ---- | ------- | ------------- |
+| _(none open)_ | FE-001 Shipper Profiles was promoted to [ADR-0005](0005-optional-shipper-profile-credential.md) (2026-06-19). | — |
 
 ## How they relate
 
@@ -21,6 +31,9 @@ For the synthesized picture, start with the [System Overview](../system-overview
 - **0003** keeps Rate and Create consistent: one runtime predicate decides "international," so the
   Rate customs-value requirement and the Create customs-forms requirement are gated by the same
   rule rather than by parallel `displayOptions`.
+- **0005** reuses that same single-source discipline for the Shipper block: an optional non-auth
+  profile credential fills the Shipper fields at run time through one shared merge helper called by
+  both Rate and Create, so the two can never resolve the Shipper differently (cf. 0003).
 - **0001** records the deliberate deviation from the constitution's "bounded retry with backoff"
   default — declarative routing has no error-class-selective backoff knob, so transient resilience
   is delegated to n8n's native Retry On Fail.

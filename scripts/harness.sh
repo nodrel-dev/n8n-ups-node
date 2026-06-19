@@ -21,14 +21,17 @@ npm pack
 TARBALL="$(ls -t ./*.tgz | head -n1)"
 
 echo "==> Starting n8n (Docker) with $PKG_NAME installed on :$PORT"
+# Community nodes must be installed into ~/.n8n/nodes (the node_modules under the `nodes`
+# subdir is what n8n auto-loads at startup). Installing into ~/.n8n directly leaves the
+# package on disk but UNLOADED — the node never appears in the editor (learned the hard way).
 docker run --rm -it \
   -p "${PORT}:5678" \
-  -e N8N_RUNNERS_ENABLED=true \
   -e N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true \
+  -e N8N_SECURE_COOKIE=false \
   -v "$(pwd)/$TARBALL:/tmp/$TARBALL" \
   --entrypoint /bin/sh \
   docker.n8n.io/n8nio/n8n \
-  -c "cd /home/node/.n8n && npm install /tmp/$TARBALL && n8n start"
+  -c "mkdir -p /home/node/.n8n/nodes && cd /home/node/.n8n/nodes && npm install /tmp/$TARBALL && cd /home/node/.n8n && n8n start"
 
 # For --ci: install the tarball, import test/workflows/*.json, then
 # `n8n execute --id <id>` each and assert on output. Wire to your fixtures.

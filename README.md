@@ -12,7 +12,7 @@ Track shipments · validate addresses · quote rates · create labels (with inte
 [![license: MIT](https://img.shields.io/npm/l/@nodrel-dev/n8n-nodes-ups)](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups)
 [![published with provenance](https://img.shields.io/badge/published%20with-provenance-3b82f6?logo=npm)](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups#provenance)
 
-[Installation](#installation) · [Operations](#operations) · [Credentials](#credentials) · [Usage](#usage) · [npm](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups) · [UPS Developer Portal](https://developer.ups.com/) · [Report an issue](https://github.com/nodrel-dev/n8n-nodes-ups/issues)
+[Installation](#installation) · [Operations](#operations) · [Credentials](#credentials) · [Shipper Profiles](#shipper-profiles) · [Usage](#usage) · [npm](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups) · [UPS Developer Portal](https://developer.ups.com/) · [Report an issue](https://github.com/nodrel-dev/n8n-nodes-ups/issues)
 
 </div>
 
@@ -121,8 +121,8 @@ Standardize an address and classify it residential vs commercial (`POST /address
 
 Quote published and negotiated rates with transit times for every eligible service (`POST /rating/v2409/Shoptimeintransit`).
 
-- **Account Number** (required) — your ShipperNumber; also requests negotiated rates.
-- Shipper / Ship To (and optional Ship From) addresses, package weight (+ unit) and optional dimensions (+ unit).
+- **Account Number** (required) — your ShipperNumber; also requests negotiated rates. May instead be supplied by a [Shipper Profile](#shipper-profiles) credential.
+- Shipper / Ship To (and optional Ship From) addresses, package weight (+ unit) and optional dimensions (+ unit). The Shipper block can be filled from a [Shipper Profile](#shipper-profiles).
 - **Customs Value** — required when origin and destination countries differ (international).
 - Emits **one output item per service**, each with published + negotiated price, transit days, and any UPS alerts. If no negotiated rates are returned, a request-level alert is attached to the first item.
 
@@ -130,8 +130,8 @@ Quote published and negotiated rates with transit times for every eligible servi
 
 Buy a shipment and get a printable label plus tracking number (`POST /shipments/v2409/ship`).
 
-- **Account Number** (required), **Service Code**, Shipper / Ship To (and optional Ship From), package weight/dimensions, **Label Format** (GIF default; ZPL / EPL / SPL — no PDF label).
-- **International** (origin ≠ destination country) additionally requires the customs fields: reason for export, currency, terms of shipment, sold-to party, and at least one commodity line.
+- **Account Number** (required; or supplied by a [Shipper Profile](#shipper-profiles)), **Service** (dropdown of UPS service codes; Ground/`03` default), Shipper / Ship To (and optional Ship From), package weight/dimensions, **Label Format** (GIF default; ZPL / EPL / SPL — no PDF label). The Shipper block can be filled from a [Shipper Profile](#shipper-profiles).
+- **International** (origin ≠ destination country) additionally requires the **Customs** fields (a collapsible group: reason for export, currency, terms of shipment, invoice number/date), the **Sold To** party, and at least one **Commodities** line.
 - Returns the tracking number and account/published charges, plus the **label** as a binary attachment (`label`); international shipments also return the **commercial invoice** PDF (`customsInvoice`). Label/invoice image data is never embedded as a string in the JSON output.
 
 Billing is to the shipper (transportation charges); international duties are billed to the receiver (DDU) in this version.
@@ -146,13 +146,14 @@ You authenticate with a UPS **Client ID** and **Client Secret** using OAuth2 cli
 2. Note its **Client ID** and **Client Secret**. A single UPS OAuth app entitles all four APIs used here (Track, Address Validation, Rating, Ship), so one credential covers every operation.
 3. For Get Rates and Create you also need your UPS **account number** (ShipperNumber).
 
-### One credential type
+### Credential types
 
-The node uses a single credential, **UPS OAuth2 API**, for all four operations:
+The node authenticates with a single credential, **UPS OAuth2 API**, for all four operations. An optional, non-auth **UPS Shipper Profile API** credential can also be attached to supply reusable Shipper data (see [Shipper Profiles](#shipper-profiles)).
 
-| Credential type | Used by |
-| --------------- | ------- |
-| `upsOAuth2Api`  | Track, Validate, Get Rates, Create |
+| Credential type | Required | Used by |
+| --------------- | -------- | ------- |
+| `upsOAuth2Api`  | Yes | Track, Validate, Get Rates, Create (authenticates every request) |
+| `upsShipperProfileApi` | No | Get Rates, Create (fills the Shipper block; never authenticates) |
 
 ### Set up a credential in n8n
 
@@ -174,11 +175,20 @@ Grant type is OAuth2 **client credentials** (HTTP Basic, empty scope) — config
 
 The Customer Integration Environment (CIE) is limited test data — for example, address validation returns street-level results for **US NY/CA** addresses only, and Track returns a canned `DELIVERED` response for any well-formed `1Z` number.
 
+### Shipper Profiles
+
+Re-entering the same Shipper block on every Get Rates and Create call is the biggest source of form friction — and getting the Shipper country wrong for the account makes UPS reject the call (`111617` Rate / `120120` Ship). An **optional** second credential, **UPS Shipper Profile API**, stores reusable Shipper data so you can swap the whole block (including the account number) by selecting a profile — handy when you ship from more than one registered account (e.g. a Canada-registered and a US account).
+
+- **What it holds:** Account Number (ShipperNumber), Shipper Name, Address (lines, city, state/province, postal, country), and Phone. It carries **no secret** and never authenticates a request — `UPS OAuth2 API` is still the only credential that talks to UPS. Keeping the account number here also keeps it out of the workflow JSON.
+- **How to use it:** create a **UPS Shipper Profile API** credential, fill the Shipper fields, then attach it to the UPS node (alongside the OAuth credential). Its **Test** button runs an offline check that the profile is internally usable.
+- **Precedence (per field):** an explicit value typed on the node **always wins**; a field left **blank** inherits from the profile; if neither supplies it, the built-in default applies (Shipper country falls back to `US`). So you can use a profile for most fields and still override one in place.
+- **Caveat:** profile values fill **at run time**, not in the editor — the fields stay blank in the form and are merged when the workflow executes. (Stock n8n has no way for a community node to write sibling editor fields; see [ADR-0005](docs/adr/0005-optional-shipper-profile-credential.md).)
+
 ## Compatibility
 
 - Requires n8n with `n8nNodesApiVersion: 1`.
 - Built and tested against the UPS REST API (Track v1, Address Validation v2, Rating v2409, Ship v2409).
-- The account number is never defaulted or hardcoded — it always comes from the node field, and your API keys live only in the credential.
+- The account number is never defaulted or hardcoded — it comes from the node field or an optional [Shipper Profile](#shipper-profiles) credential, and your API keys live only in the credential.
 
 ## Security & dependencies
 

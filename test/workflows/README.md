@@ -1,6 +1,6 @@
 # UPS node — importable harness workflows
 
-Five paste-and-run n8n workflows for the Principle-12 through-n8n gates in
+Six paste-and-run n8n workflows for the Principle-12 through-n8n gates in
 [`../../specs/001-ups-node/quickstart.md`](../../specs/001-ups-node/quickstart.md). Every value is
 pre-filled from the 2026-06-19 live-CIE smoke test, so each should succeed on first run against the
 **sandbox (CIE)** environment.
@@ -12,6 +12,7 @@ pre-filled from the 2026-06-19 live-CIE smoke test, so each should succeed on fi
 | `03-get-rates.json` | 3 — Get Rates | one item **per service**, each with published rate + transit days |
 | `04-create-domestic.json` | 4a — Create (CA domestic) | tracking number + **GIF label** in binary `label`; no base64 in JSON |
 | `05-create-international.json` | 4b — Create (CA→US) | tracking number + label + **customs invoice PDF** in binary `customsInvoice` |
+| `06-agent-track.json` | 5 — AI-Agent tool path | chat prompt → agent calls the UPS tool with the `$fromAI`-extracted number → plain-language status + scan history |
 
 ## Node type caveat (gotchas §4) — READ FIRST
 
@@ -55,7 +56,39 @@ Open a workflow and click **Execute Workflow**, or headlessly:
 
 ## Tool path (Gate 5 / T046)
 
-Repeat each operation through the **AI-Agent tool path** (`usableAsTool: true`, Principle 11): add an
-**AI Agent** node, attach the **UPS** node as a tool, and drive it with a prompt (e.g. *"track
-1Z12345E0205271688"*). Requires an LLM credential, so it isn't pre-baked here. The harness must run
-with `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true` (already set in `scripts/harness.sh`).
+`06-agent-track.json` proves the **AI-Agent tool path** (`usableAsTool: true`, Principle 11 / NFR-004):
+a **Chat Trigger → AI Agent** (Anthropic model + Simple Memory) with the **UPS** node attached as a
+tool. The agent reads the chat message (`promptType: auto`) and the tool's **Tracking Number** is a
+`$fromAI('trackingNumber', …)` expression, so the model extracts the number from the prompt and binds
+it to the node — the call is genuinely agent-driven, not hardcoded.
+
+The harness must run with `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true` (already set in
+`scripts/harness.sh`). Because it needs an LLM credential, the file ships **two** placeholders —
+`REPLACE_WITH_YOUR_CREDENTIAL_ID` (UPS) and `REPLACE_WITH_YOUR_ANTHROPIC_CREDENTIAL_ID` (Anthropic);
+select both after import.
+
+### Run it
+Open the workflow, click **Open Chat** (test mode — no need to activate the workflow), and send a
+prompt that contains a well-formed `1Z` number, e.g. *"Track 1Z12345E0205271688 and tell me its
+status."* CIE returns a canned `DELIVERED` for any well-formed `1Z`, so the exact number is free.
+
+### PASS — all of the following
+- [ ] The agent run shows the **UPS tool was actually invoked** (a tool-call step appears in the
+      agent's execution log / the UPS node lights up), **not** an answer from the model's own
+      knowledge.
+- [ ] The tool received the **number from the chat message** via `$fromAI` — change the number in the
+      prompt and the looked-up number changes with it (proves the binding, not a fixed value).
+- [ ] The UPS tool returns the canned `status` (`DELIVERED`) **+ `activity[]`** scan history
+      (`detail: detailed`), with the required `transId`/`transactionSrc` headers sent (gotchas §13).
+- [ ] The agent's final chat reply restates the **current status and recent scan history in plain
+      language** (per the system message).
+- [ ] No credential error on the **tool** path specifically — single credential, so the gotchas-§1
+      `Could not get parameter: authentication` failure must **not** appear.
+
+### FAIL signals
+- Agent answers without ever calling the UPS tool (no UPS node execution in the run) → tool not
+  wired as `ai_tool`, or `N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE` unset.
+- Tool called but **Tracking Number empty / wrong** → `$fromAI` didn't bind; check the expression and
+  that `promptType: auto` (a leftover `define` + fixed `text` ignores the chat input).
+- `Could not get parameter: authentication` or any auth throw on the tool path → credential-resolution
+  regression (gotchas §1); a single-credential node should never hit this.

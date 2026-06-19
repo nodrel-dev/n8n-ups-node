@@ -1,0 +1,80 @@
+{
+  "name": "UPS · Gate 5 · AI Agent tool path (Track)",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "chat-trigger",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [-176, 0]
+    },
+    {
+      "parameters": {
+        "promptType": "auto",
+        "options": {
+          "systemMessage": "You are a UPS assistant. When the user gives a tracking number or asks about a package, call the UPS tool to look it up, then report the current status and recent scan history in plain language."
+        }
+      },
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 4.5"
+        },
+        "options": {}
+      },
+      "id": "anthropic-chat-model",
+      "name": "Anthropic Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [-16, 224],
+      "credentials": {
+        "anthropicApi": { "id": "REPLACE_WITH_YOUR_ANTHROPIC_CREDENTIAL_ID", "name": "Anthropic account" }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $now }}"
+      },
+      "id": "simple-memory",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [256, 208]
+    },
+    {
+      "parameters": {
+        "trackingNumber": "={{ $fromAI('trackingNumber', 'The UPS 1Z tracking number to look up', 'string') }}",
+        "requestOptions": {}
+      },
+      "id": "ups-tool",
+      "name": "Track a shipment in UPS",
+      "type": "@nodrel-dev/n8n-nodes-ups.upsTool",
+      "typeVersion": 1,
+      "position": [544, 240],
+      "credentials": {
+        "upsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "UPS account" }
+      }
+    }
+  ],
+  "connections": {
+    "When chat message received": { "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]] },
+    "Anthropic Chat Model": { "ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]] },
+    "Simple Memory": { "ai_memory": [[{ "node": "AI Agent", "type": "ai_memory", "index": 0 }]] },
+    "Track a shipment in UPS": { "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}
