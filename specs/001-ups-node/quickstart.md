@@ -5,6 +5,25 @@ Environment (CIE). Every checkbox is a Principle 12 / §15 verify-live gate; the
 is not done until its box is checked. Details live in [contracts/](./contracts/) and
 [data-model.md](./data-model.md).
 
+## Raw-API smoke test (pre-check, 2026-06-19)
+
+Before the through-n8n gates, a raw-API smoke test exercised all four endpoints with the **node's
+exact request bodies** (built from the compiled `dist` cores) against CIE. Results:
+
+| Endpoint | Result |
+|----------|--------|
+| `oauth/token` | ✅ one app's bearer accepted by **all four** APIs (entitlement PASS) |
+| `track/v1` | ✅ 200 `DELIVERED` — **after** adding required `transId`/`transactionSrc` headers (was 400; bug fixed) |
+| `addressvalidation/v2/3` | ✅ 200 → `Valid` + classification |
+| `rating/v2409/Shoptimeintransit` | ✅ 200 → 10 services + transit days (negotiated rates are account-entitlement-dependent) |
+| `shipments/v2409/ship` | ✅ 200 → tracking number + GIF label binary + CAD charge |
+
+> **Account `0C395V` is registered in CANADA.** ("CA→CA" earlier meant Canada, not California.)
+> Rating accepts a US shipper (lenient), but **Ship rejects any non-Canadian shipper with `120120`**.
+> For the Create gate use a **Canadian** Shipper/ShipFrom (e.g. 1 Yonge St, Toronto, ON `M5E1E5`)
+> and a Canada-domestic service code such as **`11` (UPS Standard)**; weight in `KGS`. The raw smoke
+> still does NOT substitute for the through-n8n gates below (Principle 12) — it de-risks them.
+
 ## Prerequisites
 - Node.js **>= 22.22** (gotchas §5); `@n8n/node-cli` >= 0.23.0.
 - A UPS developer account, an OAuth app (Client ID + Secret), and a UPS account number.

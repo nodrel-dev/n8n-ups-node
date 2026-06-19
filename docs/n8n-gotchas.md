@@ -115,7 +115,10 @@ Two more rating realities confirmed the same day:
   Note (verified CIE 2026-06-19): Rating `Shoptimeintransit` is **lenient** here — a US shipper got
   HTTP 200 — while **Ship enforces it** and returned `120120`. So a clean rate quote does NOT
   guarantee Create will accept the same Shipper; the Create Shipper address/country must match the
-  account's UPS registration.
+  account's UPS registration. The CIE test account `0C395V` is **Canada-registered**: Create only
+  succeeds with a Canadian Shipper (e.g. Toronto ON `M5E1E5`) + a Canada-domestic service like `11`
+  (UPS Standard); it returned a tracking number + GIF label + CAD charge. Don't read "CA" as
+  California — here it is Canada.
 
 ## §13 — UPS Track v1 requires `transId` + `transactionSrc` headers (verified CIE 2026-06-19)
 
