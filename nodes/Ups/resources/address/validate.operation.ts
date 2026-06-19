@@ -76,7 +76,6 @@ export const validateOperationDescription: INodeProperties[] = [
 		type: 'string',
 		default: '',
 		displayOptions: { show: showOnlyForValidate },
-		description: 'City (maps to PoliticalDivision2)',
 	},
 	{
 		displayName: 'State / Province Code',
@@ -85,7 +84,7 @@ export const validateOperationDescription: INodeProperties[] = [
 		default: '',
 		placeholder: 'NY',
 		displayOptions: { show: showOnlyForValidate },
-		description: 'Two-letter state or province code (maps to PoliticalDivision1)',
+		description: 'Two-letter state or province code',
 	},
 	{
 		displayName: 'Postal Code',

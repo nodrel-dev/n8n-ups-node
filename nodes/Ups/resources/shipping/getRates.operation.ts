@@ -18,6 +18,11 @@ const showOnlyForRates = {
 	resource: ['shipping'],
 };
 
+// Visibility-only gate for the customs fields (Recipe E). resolveShipmentParties' runtime
+// isInternational predicate stays authoritative (ADR-0003) — this `international` toggle controls
+// field visibility, not request logic, so a genuine cross-border lane is still validated if it's off.
+const showOnlyForRatesIntl = { ...showOnlyForRates, international: [true] };
+
 // preSend builds the RateRequest and enforces the two boundary invariants BEFORE any UPS call
 // (FR-010/FR-014): an account number is mandatory, and an international lane requires a customs value.
 // We throw NodeOperationError, but n8n's declarative routing rewraps any preSend throw into
@@ -50,7 +55,7 @@ async function ratesPreSend(
 			'A customs value is required for an international shipment.',
 			{
 				description:
-					'The origin and destination countries differ; enter the customs value of the goods.',
+					'The origin and destination countries differ. Turn on "Is International Shipment" to reveal the customs fields, then enter the customs value of the goods.',
 			},
 		);
 	}
@@ -96,7 +101,7 @@ export const getRatesOperationDescription: INodeProperties[] = [
 	},
 	{
 		displayName:
-			'The Shipper fields below (and Account Number) can be supplied by an optional UPS Shipper Profile credential. An explicit value here always overrides the profile; leave a field blank to inherit it from the profile.',
+			'Tip: attach a UPS Shipper Profile credential to auto-fill the Shipper fields and Account Number. Any value you enter here overrides the profile.',
 		name: 'shipperProfileNoticeRates',
 		type: 'notice',
 		default: '',
@@ -123,12 +128,21 @@ export const getRatesOperationDescription: INodeProperties[] = [
 	}),
 	...packageFields(showOnlyForRates),
 	{
+		displayName: 'Is International Shipment',
+		name: 'international',
+		type: 'boolean',
+		default: false,
+		displayOptions: { show: showOnlyForRates },
+		description:
+			'Whether this shipment is international (the origin and destination countries differ). Turning it on reveals the required customs fields; the node still validates internationality from the addresses at run time, so a genuine cross-border lane is caught even if this is left off.',
+	},
+	{
 		displayName:
-			'The customs fields below are REQUIRED when the origin and destination countries differ (international). Leave them at their defaults for domestic shipments.',
+			'Customs details for an international shipment (the origin and destination countries differ). A customs value is required.',
 		name: 'ratesCustomsNotice',
 		type: 'notice',
 		default: '',
-		displayOptions: { show: showOnlyForRates },
+		displayOptions: { show: showOnlyForRatesIntl },
 	},
 	{
 		displayName: 'Customs Value',
@@ -136,7 +150,7 @@ export const getRatesOperationDescription: INodeProperties[] = [
 		type: 'number',
 		default: 0,
 		typeOptions: { minValue: 0 },
-		displayOptions: { show: showOnlyForRates },
+		displayOptions: { show: showOnlyForRatesIntl },
 		description:
 			'Declared value of goods. Required when origin and destination countries differ (international).',
 	},
@@ -146,7 +160,7 @@ export const getRatesOperationDescription: INodeProperties[] = [
 		type: 'options',
 		options: CURRENCY_OPTIONS,
 		default: 'USD',
-		displayOptions: { show: showOnlyForRates },
+		displayOptions: { show: showOnlyForRatesIntl },
 		description:
 			'Currency for the customs value. Pick a common code, or use an expression to set any ISO 4217 code.',
 	},

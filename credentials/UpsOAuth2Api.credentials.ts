@@ -31,6 +31,13 @@ export class UpsOAuth2Api implements ICredentialType {
 
 	properties: INodeProperties[] = [
 		{
+			displayName:
+				'Create a UPS app at the UPS Developer Portal (developer.ups.com) to get your Client ID and Client Secret. Use the same UPS account whose number you ship with.',
+			name: 'setupNotice',
+			type: 'notice',
+			default: '',
+		},
+		{
 			displayName: 'Environment',
 			name: 'environment',
 			type: 'options',
