@@ -165,7 +165,7 @@ shippable, independently testable slice (spec §User Scenarios).
 
 - [ ] T046 Verify every operation through the AI-Agent **tool** path in the Docker harness (`scripts/harness.sh`, `n8n execute --id`), not just the normal path (Principle 11, quickstart Gate 5, SC-008).
 - [ ] T047 Confirm pinned versions still accepted — `v2409` (rating, ship), `v2` (address validation), `v1` (track); record any drift in the contracts (quickstart Gate 5, `[VERIFY-LIVE]` #9).
-- [ ] T048 Run `npx @n8n/scan-community-package n8n-nodes-ups` → zero errors; run `npm pack --dry-run` → tarball is LICENSE + README + dist only (Definition of Done, gotchas §6/§7).
+- [~] T048 `npm pack --dry-run` → **PASS** (2026-06-19): tarball is LICENSE + README + dist only (77 files, 28 kB; no source `.ts`, no `.env`). Scan is a **post-publish** gate — `npx @n8n/scan-community-package n8n-nodes-ups` 404s pre-publish because it fetches the *published* npm package, not local source (gotchas §6/§7, commit 98ec838). Re-run the scan after the first `npm run release`.
 - [X] T049 [P] Write/refresh `README.md`: credential setup + each of the four operations + sandbox/production switch + AI-Agent tool usage (FR-015).
 - [X] T050 [P] Confirm `vitest run` is green across all 12 cores and `npm run lint` is clean (Principle 3, Principle 10).
 - [ ] T051 Run the full `quickstart.md` gate checklist end-to-end against CIE and check every `[VERIFY-LIVE]` box (Principle 12 — operation not done until its gate is checked).
