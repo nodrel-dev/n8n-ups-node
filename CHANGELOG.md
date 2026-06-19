@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.2.2...v0.3.0) (2026-06-19)
+
+
+### Features
+
+* rescope npm package to @nodrel-dev/n8n-nodes-ups + integration docs ([#12](https://github.com/nodrel-dev/n8n-nodes-ups/issues/12)) ([56ec3a4](https://github.com/nodrel-dev/n8n-nodes-ups/commit/56ec3a4fc0504edbf1902fd8fdccc560031cc186))
+
 ## [0.2.2](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.2.1...v0.2.2) (2026-06-19)
 
 
