@@ -1,0 +1,51 @@
+{
+  "name": "UPS · Gate 4a · Create (domestic CA, GIF label)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-create-dom",
+      "name": "Execute Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "resource": "shipping",
+        "operation": "create",
+        "accountNumber": "0C395V",
+        "service": "11",
+        "shipperName": "Test Shipper",
+        "shipperAddressLine1": "1 Yonge St",
+        "shipperCity": "Toronto",
+        "shipperStateProvinceCode": "ON",
+        "shipperPostalCode": "M5E1E5",
+        "shipperCountryCode": "CA",
+        "shipperPhone": "4165551234",
+        "shipToName": "Test Consignee",
+        "shipToAddressLine1": "555 W Hastings St",
+        "shipToCity": "Vancouver",
+        "shipToStateProvinceCode": "BC",
+        "shipToPostalCode": "V6B4N6",
+        "shipToCountryCode": "CA",
+        "shipToPhone": "6045555678",
+        "weight": 2,
+        "weightUnit": "KGS",
+        "labelFormat": "GIF"
+      },
+      "id": "ups-create-dom",
+      "name": "UPS Create",
+      "type": "n8n-nodes-ups.ups",
+      "typeVersion": 1,
+      "position": [240, 0],
+      "credentials": {
+        "upsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "UPS CIE" }
+      }
+    }
+  ],
+  "connections": {
+    "Execute Workflow": { "main": [[{ "node": "UPS Create", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}
