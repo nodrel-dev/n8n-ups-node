@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📦 n8n-nodes-ups
+# 📦 n8n-ups-node
 
 **Use the UPS REST API directly in your n8n workflows.**
 
