@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.4.0...v0.5.0) (2026-06-19)
+
+
+### Features
+
+* **node:** improve credential/parameter UX (cognitive-load recipes A,B,D,E,F) ([#21](https://github.com/nodrel-dev/n8n-ups-node/issues/21)) ([e3d647c](https://github.com/nodrel-dev/n8n-ups-node/commit/e3d647ceea06d5edd7c8f2de8b9acdbdd3ab0866))
+
 ## [0.4.0](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.3.1...v0.4.0) (2026-06-19)
 
 
