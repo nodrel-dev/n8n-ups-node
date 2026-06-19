@@ -32,7 +32,10 @@ number requests negotiated rates. Container is `PackagingType` (Rate side).
 ## Response → `RateLine[]` (one output item per service)
 `{ serviceCode, serviceName, negotiated:{amount,currency}|null, published:{amount,currency}, billingWeight, transitDays:number|null, guaranteedBy:string|null, alerts:string[] }`.
 - Negotiated nullable; Published never null. When **every** line's negotiated is null → one
-  request-level alert on the first emitted item (FR-007). `[VERIFY-LIVE]` negotiated return.
+  request-level alert on the first emitted item (FR-007). ✅ **VERIFIED-LIVE**: empty
+  `NegotiatedRatesIndicator` is the correct trigger and transit days return; whether
+  `NegotiatedRateCharges` actually populate is **account-entitlement-dependent** (2026-06-19: a lane
+  returned published-only — the null-negotiated alert path, not a bug).
 - Per-service alerts in `RateLine.alerts`; request-level `RateResponse.Response.Alert[]` attaches
   to the first item only. Always emits ≥1 item (zero-service lanes + request alerts never dropped).
 

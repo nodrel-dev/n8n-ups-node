@@ -17,8 +17,8 @@ PostcodeExtendedLow, CountryCode }`.
 - Returns **one** item carrying Resolution + `candidates[]` — does not fan out.
 
 ## Constraints
-- CIE returns street-level validation for **NY/CA addresses only** (`[VERIFY-LIVE]`, test data
-  must reflect this).
+- CIE returns street-level validation for **NY/CA addresses only** (✅ VERIFIED-LIVE 2026-06-19: a
+  CA address returned `Valid` + classification; test data must use NY/CA).
 - Unresolvable → explicit `none`, never a silent empty result.
 
 ## Acceptance / Maps to

@@ -90,3 +90,32 @@ force **all four** operations to become programmatic — a whole-node change, no
 one. Constitution Principle 5 and the build brief still say "programmatic `execute()` permitted
 only for Create"; read that as "permitted for Create's binary/customs *behaviour*", which is
 satisfied here declaratively.
+
+---
+
+## Amendment (2026-06-19): Track error-envelope VERIFY-LIVE resolved — and corrected
+
+The 2026-06-18 body above (lines under "UPS error envelopes") **speculated** that Track's
+not-found is a **404** carrying a *distinct* schema chain (`Response → response → ErrorResponse
+→ errors[] → Error`). Live CIE probing on 2026-06-19 (raw-API, node's exact request) corrects
+both halves:
+
+1. **Track v1 requires two request headers** — `transId` and `transactionSrc` — or it returns
+   **HTTP 400** with `TV0011 "Missing transactionSrc"` + `TV0001 "Missing transId"`. This was the
+   real blocker on Track (and on the ADR-0002 credential probe, which is also a Track call). Fixed
+   in `track.operation.ts` + the credential `test` (gotchas §13). Track is the **only** one of the
+   four UPS APIs that requires these headers.
+2. **The observed Track error envelope is the COMMON shape** — `{ response: { errors: [{ code,
+   message }] } }` — *not* a distinct chain. `mapUpsError`'s `extractErrors` already parses this
+   first branch (plus a defensive capitalized-`Response` variant and a top-level `errors[]`), so no
+   Track-specific code path is needed; the function is correct as written.
+3. **There is no observable "not-found 404" in CIE.** The CIE Track endpoint returns a canned
+   **HTTP 200 `DELIVERED`** for ANY well-formed `1Z` number (including the all-zeros placeholder).
+   So the "404 not-found envelope" the original body described cannot be exercised against CIE; a
+   genuine not-found would only appear in production, and `mapUpsError` would classify its 4xx as
+   `input` and surface whatever `response.errors[]` it carries. This also resolves ADR-0002 (the
+   credential test passes on the canned 200; no `responseCode` rule is needed).
+
+Net: `mapUpsError` and the `ignoreHttpStatusErrors: true` mechanism are unchanged and correct; the
+only code change prompted by this finding is the Track headers. The original "404 / distinct chain"
+wording is **superseded** by points 1–3.

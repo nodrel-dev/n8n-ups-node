@@ -82,30 +82,35 @@ Integration Environment (CIE) before the matching operation is marked done (Prin
 - Publish via GitHub Actions OIDC Trusted Publishing + provenance (configure the trusted
   publisher with the workflow filename, not its `name:`).
 
-## Open `[VERIFY-LIVE]` unknowns (gates per §15)
+## `[VERIFY-LIVE]` unknowns (gates per §15)
 
-Each is resolved by a real call through the running n8n path against CIE; record the answer in
-the matching contract file and check the box in `quickstart.md`.
+Each is resolved by a real call against CIE; record the answer in the matching contract file and
+check the box in `quickstart.md`. Status as of 2026-06-19 (raw-API probes with the node's exact
+request bodies). **RESOLVED** = UPS-side behaviour confirmed; the through-n8n operation gates
+(T016/023/034/045) still re-run these through the running node per Principle 12.
 
-1. **Single-app entitlement** — confirm one token is accepted by Track, Validate, Rate, AND Ship
-   (gotchas §3); a per-API 403 reads like a phantom auth bug.
-2. **Token exchange** — Basic-header client credentials + **empty scope** + `grant_type=client_credentials`
-   accepted at `wwwcie.ups.com` (gotchas §2).
-3. **Track not-found HTTP status** — 200+error-body (n8n default test passes, no `rules` needed)
-   vs 4xx (add a `responseCode`/`responseSuccessBody` rule). Drives the credential-test
-   implementation (ADR-0002) and `mapUpsError`'s Track branch.
-4. **Track error envelope path** — exact schema chain for Track's distinct error shape
-   (`Response → response → ErrorResponse → errors[] → Error`) vs the common `response.errors[]`.
-5. **Validate (CIE)** — candidates + classification returned for an NY/CA address; behaviour for
-   unresolvable/ambiguous.
-6. **Negotiated rate return** — `NegotiatedRatesIndicator` + valid account number yields
-   `NegotiatedRateCharges`; transit times present with `Shoptimeintransit`.
-7. **Domestic Create label** — GIF (and ZPL) binary returned with no `GraphicImage` leak into
-   JSON; confirm whether GIF needs `HTTPUserAgent` / `LabelStockSize`.
-8. **International Create** — commodity payload accepted; label + tracking + customs invoice PDF
-   returned; confirm whether UPS rejects cross-border without shipper/consignee **phone**.
-9. **Version drift** — `v2409` (rating, ship), `v2` (address validation), `v1` (track) still
-   accepted; record any drift.
-10. **Base URL resolution** — `requestDefaults.baseURL` resolves from `$credentials.environment`
-    under `n8n-node dev` (live node type is `CUSTOM.ups`, gotchas §4), and the credential `test`
-    passes under valid App Credentials.
+1. **Single-app entitlement** — ✅ **RESOLVED**: one token accepted by Track, Validate, Rate AND
+   Ship (gotchas §3 risk cleared).
+2. **Token exchange** — ✅ **RESOLVED**: Basic-header client credentials + empty scope +
+   `grant_type=client_credentials` → HTTP 200 at `wwwcie.ups.com`.
+3. **Track not-found HTTP status** — ✅ **RESOLVED**: CIE returns canned **200 `DELIVERED`** for any
+   well-formed `1Z` (no real not-found path); bare credential test passes, no `rules` needed
+   (ADR-0002 amendment). NOTE: Track first requires `transId`/`transactionSrc` headers or 400s.
+4. **Track error envelope path** — ✅ **RESOLVED**: the observed envelope is the **common**
+   `response.errors[]` shape (e.g. `TV0011`/`TV0001`), which `mapUpsError` already parses; no
+   distinct Track chain needed (ADR-0004 amendment).
+5. **Validate (CIE)** — ✅ **RESOLVED**: US CA address → `Valid` + classification; CIE does
+   street-level for US NY/CA only.
+6. **Negotiated rate return** — ✅ **RESOLVED (account-dependent)**: empty `NegotiatedRatesIndicator`
+   is the correct trigger and transit times come back with `Shoptimeintransit`; whether
+   `NegotiatedRateCharges` populate depends on the account's entitlement for the lane (absent ≠ bug;
+   `flattenRates` emits the request-level alert).
+7. **Domestic Create label** — ✅ **RESOLVED**: GIF label binary returned (36 KB base64) + tracking
+   number; GIF did **not** need `HTTPUserAgent`/`LabelStockSize`. (ZPL not yet re-run through node.)
+8. **International Create** — ⏳ **OPEN**: not exercised in the 2026-06-19 raw probes (domestic only).
+   Covered by `test/workflows/05-create-international.json` for the through-n8n gate (T045).
+9. **Version drift** — ✅ **RESOLVED**: `v2409` (rating, ship), `v2` (address validation), `v1`
+   (track) all returned 200 — no drift (T047).
+10. **Base URL resolution** — ⏳ **OPEN (through-n8n only)**: `$credentials.environment` →
+    `requestDefaults.baseURL` and the credential **Test** button are exercised in the harness, not
+    by raw probes. Verified in Gate 0 of the harness run.

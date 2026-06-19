@@ -37,3 +37,22 @@ CIE **before** finalizing the credential test:
 **Consequence / revisit trigger:** If UPS changes Track's not-found status or restructures
 entitlements so Track no longer proves the other APIs, reopen this and reconsider the probe
 endpoint.
+
+---
+
+## Amendment (2026-06-19): VERIFY-LIVE mechanism resolved — bare test passes, but headers are required
+
+Live CIE probing settled the mechanism question above:
+
+- **CIE returns HTTP `200` (canned `DELIVERED`) for the placeholder `1Z00000000000000000`** — and
+  for any well-formed `1Z`. So the **bare test passes with no `responseCode`/`responseSuccessBody`
+  rule**: a valid token → `200`; a bad client id/secret or wrong environment → `401/403` → fail.
+  This is the first branch the decision anticipated. There is no real "not found" path to special-
+  case in CIE.
+- **One correction:** the probe must send Track's required `transId` + `transactionSrc` headers, or
+  it `400`s (`TV0011`/`TV0001`) **even with valid credentials** — which would make the Test button
+  fail for the wrong reason. The credential `test` now sets a static pair (gotchas §13, ADR-0004
+  amendment). Without this the whole "not-found = pass" reasoning never gets reached.
+
+The decision stands: reaching Track's business layer = pass. In CIE that surfaces as a `200`, not a
+not-found, but the auth-vs-reachability distinction the test relies on is intact.

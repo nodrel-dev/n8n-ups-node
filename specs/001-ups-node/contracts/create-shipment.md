@@ -22,9 +22,12 @@ no Type 02 in v1).
 ## Response → binary
 - `extractLabel(shipResponse, requestedFormat) → { shipmentId, labels:[{ trackingNumber, base64, mime, filename }] }`
   → n8n binary key `label`, filename = tracking number, **never** a base64 string in JSON
-  (no `GraphicImage` leak — `[VERIFY-LIVE]`).
+  (no `GraphicImage` leak). ✅ **VERIFIED-LIVE 2026-06-19** (domestic): CIE returned a GIF label +
+  tracking number; GIF needed **no** `HTTPUserAgent`/`LabelStockSize`.
 - International: `extractForms(shipResponse)` → PDF binary key `customsInvoice`.
-- `[VERIFY-LIVE]`: GIF `HTTPUserAgent`/`LabelStockSize` need; cross-border phone requirement.
+- `[VERIFY-LIVE]` (still open): international commodity payload + customs-invoice PDF + cross-border
+  phone requirement — exercised by `test/workflows/05-create-international.json` (T045). NOTE: the
+  Shipper must match the account's registered country (account `0C395V` is Canada — gotchas §12).
 
 ## Boundary failures (FR-014)
 International + missing customs, or missing account number → `NodeOperationError` before any UPS

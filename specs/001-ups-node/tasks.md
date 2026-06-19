@@ -164,7 +164,7 @@ shippable, independently testable slice (spec §User Scenarios).
 **Purpose**: Verification gates, packaging, docs — concerns spanning all stories.
 
 - [ ] T046 Verify every operation through the AI-Agent **tool** path in the Docker harness (`scripts/harness.sh`, `n8n execute --id`), not just the normal path (Principle 11, quickstart Gate 5, SC-008).
-- [ ] T047 Confirm pinned versions still accepted — `v2409` (rating, ship), `v2` (address validation), `v1` (track); record any drift in the contracts (quickstart Gate 5, `[VERIFY-LIVE]` #9).
+- [X] T047 Pinned versions confirmed live (2026-06-19): `v2409` (rating → 200, ship → 200), `v2` (address validation → 200), `v1` (track → 200 with required headers). No drift (quickstart Gate 5, `[VERIFY-LIVE]` #9).
 - [~] T048 `npm pack --dry-run` → **PASS** (2026-06-19): tarball is LICENSE + README + dist only (77 files, 28 kB; no source `.ts`, no `.env`). Scan is a **post-publish** gate — `npx @n8n/scan-community-package n8n-nodes-ups` 404s pre-publish because it fetches the *published* npm package, not local source (gotchas §6/§7, commit 98ec838). Re-run the scan after the first `npm run release`.
 - [X] T049 [P] Write/refresh `README.md`: credential setup + each of the four operations + sandbox/production switch + AI-Agent tool usage (FR-015).
 - [X] T050 [P] Confirm `vitest run` is green across all 12 cores and `npm run lint` is clean (Principle 3, Principle 10).
@@ -217,15 +217,33 @@ Ran the token exchange and per-API entitlement probes directly against the UPS C
 - **Account-country constraint recorded:** Shipper address country must equal the account's
   registered country, else `111617` (Rate) / `120120` (Ship). Documented in gotchas §12.
 
+### Live CIE verification — session 2026-06-19 (full four-endpoint smoke + Track bug)
+
+Re-probed all four endpoints against CIE with the node's **exact** request bodies (built from the
+compiled `dist` cores), and prepared the through-n8n harness workflows (`test/workflows/`).
+
+- **Track — blocking bug found and fixed.** UPS Track v1 `400`s without `transId` +
+  `transactionSrc` headers (`TV0011`/`TV0001`); with them → `200 DELIVERED`. This broke every Track
+  call AND the credential Test (a Track probe). Fixed in `track.operation.ts` + the credential
+  `test` (gotchas §13, ADR-0002/0004 amendments). Resolves VERIFY-LIVE #3/#4.
+- **Validate / Get Rates — confirmed.** Validate `200` (`Valid` + classification); Rate `200` with
+  10 services + transit days. Negotiated rates were account-dependent this run (published-only) —
+  not a bug; VERIFY-LIVE #6 refined.
+- **Create — confirmed (domestic) + account fact.** A **Canadian** domestic shipment (Toronto→
+  Vancouver, service `11`) returned tracking + a 36 KB **GIF label**; GIF needed no
+  `HTTPUserAgent`/`LabelStockSize` (VERIFY-LIVE #7 resolved). Sandbox account `0C395V` is
+  **Canada-registered**: Rating is lenient on account-country but **Ship enforces it** and `120120`s
+  any US shipper (gotchas §12). International Create (#8) remains open — covered by
+  `test/workflows/05-create-international.json`.
+- **Pinned versions** `v2409`/`v2`/`v1` all returned 200 — no drift (T047 done).
+
 ### Remaining open tasks are all manual live-verification gates (Principle 12)
 
-T016, T023, T034, T045, T046, T047, T051 require real UPS sandbox (CIE) credentials and a running
-n8n/Docker harness; T048's `@n8n/scan-community-package` requires the package to be **published**
-(it fetches from registry.npmjs.org — confirmed 404 on the unpublished package, matching the repo's
-own note). The local half of T048 (`npm pack --dry-run`) passes: tarball = LICENSE + README + dist.
-These were not executed here because no credentials, harness, or publish exist in this environment.
-The Rate bugs above mean T034 still needs a through-node re-run, but the UPS-side contract is now
-proven; Gate 0 entitlement and the negotiated-rate sub-gate are satisfied.
+T016, T023, T034, T045, T046, T051 require the running n8n/Docker harness (the UPS-side payloads are
+now proven by the smoke above; these re-run them through the node). T048's
+`@n8n/scan-community-package` requires the package to be **published** (it fetches from
+registry.npmjs.org — confirmed 404 on the unpublished package); the local half (`npm pack
+--dry-run`) passes: tarball = LICENSE + README + dist. T047 (pinned versions) is done.
 
 ---
 
