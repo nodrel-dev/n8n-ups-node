@@ -61,11 +61,17 @@ LICENSE + README + dist only.
   tag/release created by the default `GITHUB_TOKEN` does NOT trigger a separate tag-listening
   workflow (GitHub recursion guard), so a standalone `publish.yml` would silently never fire.
 - Publish from GitHub Actions with **OIDC Trusted Publishing** + provenance — required
-  for verification submissions from May 1, 2026. No long-lived token. Node 24 (npm 11) is
-  required for the OIDC token exchange.
+  for verification submissions from May 1, 2026. No long-lived token.
+- **OIDC Trusted Publishing AUTH requires npm >= 11.5.1** — and this is distinct from
+  provenance *signing*, which works on older npm. Node 24's bundled npm 11.x is **older
+  than 11.5.1**, so without an explicit `npm install -g npm@latest` step the publish
+  *signs provenance fine* but then runs **unauthenticated** → the scoped-package `404 PUT`
+  below. Pin the upgrade step before `npm publish` (verified: a v0.3.0 publish failed this
+  exact way 2026-06-19; the FedEx workflow already carries the upgrade step).
 - Configure the Trusted Publisher with the workflow filename (`release-please.yml`), not
-  the workflow's `name:` field.
-- A `404 PUT` on a scoped package usually means the publish ran unauthenticated.
+  the workflow's `name:` field, and the right repo/org.
+- A `404 PUT` on a scoped package usually means the publish ran unauthenticated (stale npm
+  per the bullet above, a wrong/absent Trusted Publisher, or a token lacking scope rights).
 - First-publish read-CDN propagation can lag ~5 minutes.
 - **release-please trap 1 — PR permission:** the job fails with "GitHub Actions is not permitted
   to create or approve pull requests" unless repo Settings → Actions → General → "Allow GitHub
