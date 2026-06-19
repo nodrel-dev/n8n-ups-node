@@ -31,14 +31,14 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Verified-node gate: must pass with zero errors.
-      - name: Scan community package
-        run: npx @n8n/scan-community-package "$(node -p "require('./package.json').name")"
-
       # Confirms the published tarball is LICENSE + README + dist only
       # (guards the incremental-build trap from the gotchas).
       - name: Pack check
         run: npm pack --dry-run
+
+      # NOTE: `@n8n/scan-community-package` is intentionally NOT run here — it scans the
+      # PUBLISHED npm package (fetches from registry.npmjs.org) and 404s on an unpublished
+      # version, so it can only run post-publish. It lives in publish.yml's `scan` job.
 
   # Optional: dual-path execution test in a real n8n container.
   # Enable once you have harness workflows committed under test/.

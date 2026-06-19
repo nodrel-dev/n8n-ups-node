@@ -15,9 +15,12 @@ base URL via the FedEx-proven expression mechanism (ADR-0001 host-split guard).
 
 Technical approach: **declarative-first**. Track, Validate, and Get Rates use declarative
 routing with `ignoreHttpStatusErrors: true` + a `postReceive` hook into pure transform cores;
-errors are reshaped by a shared `mapUpsError` (ADR-0004). Create is the one programmatic
-`execute()` — it assembles international customs forms, calls UPS, and extracts label + customs
-PDF as n8n binary. Transient resilience leans on n8n's native Retry On Fail (ADR-0001). The
+errors are reshaped by a shared `mapUpsError` (ADR-0004). Create is **also declarative** — it
+assembles international customs forms in a `preSend`, calls UPS, and extracts label + customs PDF
+as n8n binary in a `postReceive`. (The plan originally specified a programmatic `execute()` for
+Create; n8n bypasses declarative routing entirely once a node defines `execute()`, which would
+break the other three operations, so the whole node stays declarative — see ADR-0004's 2026-06-18
+amendment.) Transient resilience leans on n8n's native Retry On Fail (ADR-0001). The
 international trigger is a runtime predicate `isInternational` (Effective Origin vs ShipTo),
 not `displayOptions` field visibility (ADR-0003). All non-trivial transforms are pure
 plain-in/plain-out cores, unit-tested test-first (Principle 10). Verification is manual,
@@ -75,7 +78,7 @@ spec Assumptions and constitution Principle 13.
 | 2 | Zero Runtime Dependencies | **PASS** | `dependencies: {}`; HTTP via built-in helpers only. No SDK/axios/XML/SOAP. FedEx logic is COPIED, not imported. |
 | 3 | TS + n8n Guidelines + Linter Clean | **PASS (1 fix)** | `n8n.strict: true`; node id `n8n-nodes-ups.ups`. **Fix required:** `tsconfig.json` currently has `incremental: true` — must be OFF (gotchas §6, see Complexity Tracking). Must pass `npx @n8n/scan-community-package`. |
 | 4 | English-Only | **PASS** | All params, help, errors, README in English. |
-| 5 | Declarative Style Preferred | **PASS** | Track / Validate / Get Rates declarative + `postReceive`. Programmatic `execute()` ONLY for Create (label/forms binary, customs assembly), documented (ADR-0004). Create `RequestOption` hardcoded `nonvalidate`, not exposed. |
+| 5 | Declarative Style Preferred | **PASS** | ALL four operations declarative + `postReceive` (Track / Validate / Get Rates) or `preSend` + `postReceive` (Create's customs assembly + label/forms binary). The node has no `execute()` (n8n disables routing if it does); the "programmatic Create" plan was revised to declarative — ADR-0004 amendment. Create `RequestOption` hardcoded `nonvalidate`, not exposed. |
 | 6 | Credentials First-Class, Never Hardcoded | **PASS** | Single `UpsOAuth2Api`; `environment` drives token URL (`$self`) and base URL (`$credentials.environment`); explicit authenticated `test` (Track probe, ADR-0002). No secret in logs/URLs/commits; `.env.local` only. |
 | 7 | Production-Grade Error Handling | **PASS (documented deviation)** | `mapUpsError` surfaces UPS `code`/`message` verbatim, classifies auth vs input vs transient, honors Continue On Fail, surfaces alerts as warnings. Bounded backoff deferred to native Retry On Fail (ADR-0001). |
 | 8 | No Competition With n8n Paid Features | **PASS** | Scope strictly UPS operations. |
@@ -86,8 +89,10 @@ spec Assumptions and constitution Principle 13.
 | 13 | International Scope Boundary | **PASS** | International Rate + Ship in scope with commercial Invoice (`FormType ["01"]`) customs + PDF binary; trigger is Effective Origin (`isInternational`); DDU. Landed Cost / DDP / multi-package / extra forms deferred. |
 
 **Gate result: PASS.** One mechanical fix is tracked below (tsconfig `incremental`). No principle
-is violated; the two deviations (native retry over backoff; programmatic Create) are
-pre-documented in ADRs and explicitly permitted by Principles 5 and 7.
+is violated; the deviation (native retry over backoff) is pre-documented in ADR-0001 and permitted
+by Principle 7. The originally-planned programmatic `execute()` for Create was revised during
+implementation to a declarative `preSend`/`postReceive` (n8n disables routing when a node defines
+`execute()`) — *more* aligned with Principle 5, recorded in ADR-0004's 2026-06-18 amendment.
 
 ## Project Structure
 
@@ -130,7 +135,7 @@ nodes/Ups/
 │   └── shipping/                 # Shipping { getRates, create }
 │       ├── index.ts
 │       ├── getRates.operation.ts # declarative + postReceive → flattenRates (fan-out one item/service)
-│       └── create.operation.ts   # programmatic execute(): isInternational guard, build forms, extract binary
+│       └── create.operation.ts   # declarative preSend (isInternational guard, build forms) + postReceive (extract binary)
 └── core/                         # pure plain-in/plain-out cores (NFR-002 / Principle 10), each < 800 lines
     ├── toUpsAddress.ts
     ├── toXavAddress.ts
@@ -170,6 +175,6 @@ the three real resources (§16 scaffolding contract).
 | Violation / deviation | Why needed | Simpler alternative rejected because |
 |-----------------------|------------|--------------------------------------|
 | `tsconfig.json` `incremental: true` must flip to `false` (no `tsBuildInfoFile`) | Gotchas §6 / Principle-3 build correctness: an external build-info file survives `rimraf dist` and ships an incomplete `dist` that fails at load | Leaving it on is not an option — it is a known release-breaking trap; this is a one-line fix, not added complexity |
-| Programmatic `execute()` for Create only | Label + customs-invoice binary extraction and international `InternationalForms` assembly cannot be expressed in declarative routing (Principle 5 explicitly permits these exceptions) | Pure declarative cannot decode base64 → n8n binary nor assemble nested customs; documented in ADR-0004 and Principle 5 |
+| Create's customs assembly + label/forms binary in `preSend`/`postReceive` (NOT a programmatic `execute()` — revised, ADR-0004 amendment) | Label/invoice base64 → n8n binary and `InternationalForms` assembly need code, but a node-level `execute()` would disable declarative routing for the OTHER three operations; so the behaviour lives in Create's declarative hooks instead | A programmatic `execute()` (the original plan) breaks Track/Validate/Rate routing; pure-declarative-without-hooks cannot decode base64 binary nor assemble nested customs |
 | `ignoreHttpStatusErrors: true` on declarative ops | UPS `code`/`message` must be surfaced verbatim and classified; n8n's default buries them and `postReceive` doesn't run on non-2xx | Default error surfacing fails SC-005; the ignore-flag + `mapUpsError` is the n8n-idiomatic fix (ADR-0004) |
 | Native Retry On Fail instead of selective 5xx/429 backoff | Declarative routing has no error-class-selective backed-off retry knob; converting 3 ops to programmatic for marginal gain is unjustified | Full declarative→programmatic conversion defeats NFR-002; documented in ADR-0001 |
