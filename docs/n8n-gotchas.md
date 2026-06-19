@@ -72,7 +72,23 @@ LICENSE + README + dist only.
   the workflow's `name:` field, and the right repo/org.
 - A `404 PUT` on a scoped package usually means the publish ran unauthenticated (stale npm
   per the bullet above, a wrong/absent Trusted Publisher, or a token lacking scope rights).
-- First-publish read-CDN propagation can lag ~5 minutes.
+- **OIDC Trusted Publishing can't CREATE a brand-new package — the package must already exist.**
+  The very first publish of a new name (e.g. a freshly-scoped `@org/pkg`) 404s on `PUT` under
+  pure OIDC even with npm >= 11.5.1 and a correctly-configured Trusted Publisher, because there
+  is no package yet for npm to match the publisher against. Bootstrap it **once** with an
+  `NPM_TOKEN` (an account/automation token with publish rights to the **scope/org**, not one
+  scoped to a different package), then remove the token so every subsequent release goes
+  tokenless via OIDC. The token publish still attaches provenance — that needs `id-token: write`
+  with `NPM_CONFIG_PROVENANCE=true`, not OIDC auth — so the bootstrapped version is verification-clean;
+  it just shows the **user** as publisher instead of "GitHub Actions" (verified 2026-06-19:
+  `@nodrel-dev/n8n-nodes-ups@0.3.1` only published after a token bootstrap; OIDC-only attempts on
+  0.3.0/0.3.1 both 404'd despite the npm upgrade.)
+- **Unpublishing name-locks the name for ~24h.** `npm unpublish <pkg>` (full delete) blocks
+  republishing that exact name for 24 hours — so don't delete the old name expecting to reuse it
+  immediately. Rescoping sidesteps this: `@org/pkg` is a different name from the unscoped `pkg`.
+- First-publish read-CDN propagation can lag ~5 minutes (the npmjs.com web UI updates first;
+  the registry read API — `npm view` — lags). Confirm a publish via the workflow's job status,
+  not just `npm view`.
 - **release-please trap 1 — PR permission:** the job fails with "GitHub Actions is not permitted
   to create or approve pull requests" unless repo Settings → Actions → General → "Allow GitHub
   Actions to create and approve pull requests" is ON (`gh api -X PUT repos/OWNER/REPO/actions/
