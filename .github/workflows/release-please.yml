@@ -4,8 +4,8 @@
 #
 # 1. release-please watches `main`. On each push it maintains a "release PR" that
 #    bumps the version and updates CHANGELOG.md from the conventional-commit history
-#    (feat → minor, fix → patch, feat!/BREAKING CHANGE → major). Config lives in
-#    release-please-config.json + .release-please-manifest.json.
+#    (feat → minor, fix → patch, feat!/BREAKING CHANGE → major). Config-less single-package
+#    mode — `release-type: node` below; no release-please-config.json / manifest files.
 # 2. When you MERGE that release PR, release-please tags the commit `v<version>`
 #    and creates the GitHub release. Its `release_created` output flips to true.
 # 3. The `publish` job (same workflow, gated on `release_created`) then publishes to
@@ -47,6 +47,11 @@ jobs:
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          # Config-less single-package mode: no release-please-config.json /
+          # .release-please-manifest.json. Avoids manifest mode's component derivation
+          # (release-type node sets component = package name), which deadlocked the first
+          # release ("PR component does not match configured component"). Tags v<version>.
+          release-type: node
 
   publish:
     name: Publish to npm
@@ -57,10 +62,10 @@ jobs:
       id-token: write   # mint the OIDC token for npm provenance
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '24'
           cache: 'npm'
@@ -87,10 +92,10 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '24'
 

@@ -50,8 +50,8 @@ LICENSE + README + dist only.
 
 ## §7 — Release & publish
 
-- Releases are driven by **release-please** (`release-please.yml` + `release-please-config.json`
-  + `.release-please-manifest.json`): conventional commits on `main` accrue into a release PR;
+- Releases are driven by **release-please** (`release-please.yml`, config-less single-package
+  mode via `release-type: node`): conventional commits on `main` accrue into a release PR;
   merging it tags `v<version>`, cuts the GitHub release, and triggers the in-workflow publish job.
 - The publish job runs `npm run release`, which in CI lints, builds, and `npm publish`es with
   provenance (`NPM_CONFIG_PROVENANCE=true`, `RELEASE_MODE=true`). **Never** run a release or raw
@@ -67,6 +67,19 @@ LICENSE + README + dist only.
   the workflow's `name:` field.
 - A `404 PUT` on a scoped package usually means the publish ran unauthenticated.
 - First-publish read-CDN propagation can lag ~5 minutes.
+- **release-please trap 1 — PR permission:** the job fails with "GitHub Actions is not permitted
+  to create or approve pull requests" unless repo Settings → Actions → General → "Allow GitHub
+  Actions to create and approve pull requests" is ON (`gh api -X PUT repos/OWNER/REPO/actions/
+  permissions/workflow -F can_approve_pull_request_reviews=true`).
+- **release-please trap 2 — use config-less mode for a single package.** Manifest mode
+  (`release-please-config.json` + `release-type: node`) derives the component from the package.json
+  name; the single-package release PR title carries no component, so on merge it logs "PR component:
+  undefined does not match configured component: <name>" and refuses to tag — deadlocking with
+  "untagged, merged release PRs outstanding - aborting". `component: ""` is ignored (empty → falls
+  back to package name). Fix: drop the config/manifest files and pass `release-type: node` as an
+  action input. To recover a deadlock: manually `git tag v<x> <sha>` + `gh release create`, then
+  relabel the stuck PR `autorelease: pending` → `autorelease: tagged` via the REST API
+  (`gh pr edit` errors on the Projects-classic GraphQL path).
 
 ## §8 — Verification review pulls the latest npm version
 

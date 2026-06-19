@@ -12,9 +12,9 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '24'   # all GH Actions pin Node 24 (satisfies n8n-node's >= 22.22 floor)
           cache: 'npm'
@@ -45,5 +45,5 @@ jobs:
   # harness:
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v5
   #     - run: ./scripts/harness.sh --ci

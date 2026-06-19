@@ -35,7 +35,7 @@ through the running n8n path against the UPS CIE (Principle 12).
 n8n's built-in `httpRequest` / `httpRequestWithAuthentication` helpers and declarative
 `routing`. `n8n-workflow` is a peer/dev dependency only. Dev-only: `@n8n/node-cli`, `eslint`,
 `prettier`, `vitest` (to be added for the pure-core tests), commitlint, lefthook. Releases use
-**release-please** (GitHub Action + `release-please-config.json`), not a local release dep.
+**release-please** (GitHub Action, config-less `release-type: node`), not a local release dep.
 
 **Storage**: N/A (stateless node; the only persisted state is the n8n-managed OAuth token and
 the user's gitignored `.env.local` secrets).
