@@ -25,6 +25,9 @@ jobs:
       - name: Lint (n8n-node lint, strict mode)
         run: npm run lint
 
+      - name: Unit tests (vitest, pure cores — Principle 10)
+        run: npm test
+
       - name: Build
         run: npm run build
 
