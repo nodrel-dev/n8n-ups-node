@@ -57,7 +57,7 @@
       },
       "id": "ups-create-intl",
       "name": "UPS Create",
-      "type": "n8n-nodes-ups.ups",
+      "type": "@nodrel-dev/n8n-nodes-ups.ups",
       "typeVersion": 1,
       "position": [240, 0],
       "credentials": {

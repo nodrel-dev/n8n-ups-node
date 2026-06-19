@@ -1,5 +1,5 @@
 {
-	"node": "n8n-nodes-ups.ups",
+	"node": "@nodrel-dev/n8n-nodes-ups.ups",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": ["Miscellaneous"],
