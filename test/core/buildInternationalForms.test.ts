@@ -36,6 +36,14 @@ describe('buildInternationalForms', () => {
 		expect(forms.InvoiceNumber).toBe('INV-1001');
 	});
 
+	it('emits InvoiceDate (yyyyMMdd) when provided — UPS rejects with 128066 without it', () => {
+		// Regression: international Create failed live with "128066 Invalid or missing invoice date"
+		// because the invoice date was never threaded through. The caller (readCustoms) now defaults
+		// it to today; this guards that the core forwards a supplied date verbatim.
+		const forms = buildInternationalForms({ ...customs, invoiceDate: '20260619' }, commodities);
+		expect(forms.InvoiceDate).toBe('20260619');
+	});
+
 	it('maps the sold-to contact and its address', () => {
 		const forms = buildInternationalForms(customs, commodities);
 		expect(forms.Contacts.SoldTo.Name).toBe('Acme Imports');
