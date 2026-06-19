@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.3.0...v0.3.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* **ci:** upgrade npm to &gt;=11.5.1 so OIDC trusted publishing authenticates ([#14](https://github.com/nodrel-dev/n8n-nodes-ups/issues/14)) ([90593c9](https://github.com/nodrel-dev/n8n-nodes-ups/commit/90593c906d0c42cd2a1965b015cb77840022a5ab))
+
 ## [0.3.0](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.2.2...v0.3.0) (2026-06-19)
 
 
