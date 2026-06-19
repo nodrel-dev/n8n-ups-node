@@ -1,0 +1,16 @@
+# Changelog
+
+## [0.2.0](https://github.com/nodrel-dev/n8n-nodes-ups/compare/v0.1.0...v0.2.0) (2026-06-19)
+
+
+### Features
+
+* **ups:** verified UPS node — track, validate, rate, create ([#1](https://github.com/nodrel-dev/n8n-nodes-ups/issues/1)) ([fc3e0c5](https://github.com/nodrel-dev/n8n-nodes-ups/commit/fc3e0c54fb3da13c1a95358c823b861ae54e1ff8))
+
+
+### Bug Fixes
+
+* **create:** send LabelStockSize for thermal labels; correct boundary-error docs ([#3](https://github.com/nodrel-dev/n8n-nodes-ups/issues/3)) ([fa83b88](https://github.com/nodrel-dev/n8n-nodes-ups/commit/fa83b88e076bb4e585d68d36f84de85958369897))
+* **hooks:** drop scan from git hooks; it scans published npm packages, not local source ([98ec838](https://github.com/nodrel-dev/n8n-nodes-ups/commit/98ec83812bff6042825acbce613739d8dea797e1))
+* **hooks:** move scan to pre-push, add npx --yes ([0192488](https://github.com/nodrel-dev/n8n-nodes-ups/commit/01924885b83b779f088edcf3ff8c977a60223a29))
+* **shipping:** fix Rate/Create param throw, international customs, and surface charges ([#2](https://github.com/nodrel-dev/n8n-nodes-ups/issues/2)) ([8387925](https://github.com/nodrel-dev/n8n-nodes-ups/commit/8387925ff72e280a664ce84b0b97fb3a302f8feb))
