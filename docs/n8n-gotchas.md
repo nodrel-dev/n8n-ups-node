@@ -86,3 +86,54 @@ SHA until GC.
 No node-types or execute endpoint on the public API. `PUT /workflows/{id}` needs the
 full body and a strict `settings` object (send `{"executionOrder":"v1"}` only). The
 credentials list endpoint never returns secret values.
+
+## §12 — UPS Rating `Shoptimeintransit` needs two extra containers (verified CIE 2026-06-18)
+
+`POST /api/rating/v2409/Shoptimeintransit` (the request option the Get Rates node uses to
+get transit times) 400s unless the `RateRequest.Shipment` carries BOTH:
+
+- `DeliveryTimeInformation: { PackageBillType: '03' }` — else error **`111563`** ("Delivery
+  Time Information Container is required …"). 03 = non-document; 02 = document; 04 = pallet.
+- `ShipmentTotalWeight: { UnitOfMeasurement: { Code, Description }, Weight }` — else error
+  **`111546` "Invalid Weight"**, a **misleading** message: the weight is fine, the *container*
+  is missing. UPS's `Rating.yaml` marks `ShipmentTotalWeight` **Required** for
+  `ratetimeintransit`/`shoptimeintransit`. Note `UnitOfMeasurement` here requires `Description`
+  (e.g. `"LBS"`), unlike `PackageWeight`. v1 is single-package, so total = package weight.
+
+Plain `Shop`/`Rate` request options need neither container — only the time-in-transit variants
+do. Don't trust the error text: `111546` reads like bad data but means a missing container.
+
+Two more rating realities confirmed the same day:
+- Empty `ShipmentRatingOptions.NegotiatedRatesIndicator: ''` DOES return `NegotiatedRateCharges`
+  (presence of the tag is the trigger, not a `Y` value) — **but only when the account is actually
+  entitled to negotiated rates on that lane**. A different test account / lane returns published
+  rates only with the tag present (verified CIE 2026-06-19); absence of `NegotiatedRateCharges` is
+  an account-entitlement fact, not a node bug. `flattenRates` correctly emits the request-level "no
+  negotiated rates" alert in that case.
+- The account's (`ShipperNumber`) registered country must equal the Shipper address country, or
+  UPS rejects with **`111617`** (Rate) / **`120120`** (Ship), regardless of the rest of the payload.
+  Note (verified CIE 2026-06-19): Rating `Shoptimeintransit` is **lenient** here — a US shipper got
+  HTTP 200 — while **Ship enforces it** and returned `120120`. So a clean rate quote does NOT
+  guarantee Create will accept the same Shipper; the Create Shipper address/country must match the
+  account's UPS registration. The CIE test account `0C395V` is **Canada-registered**: Create only
+  succeeds with a Canadian Shipper (e.g. Toronto ON `M5E1E5`) + a Canada-domestic service like `11`
+  (UPS Standard); it returned a tracking number + GIF label + CAD charge. Don't read "CA" as
+  California — here it is Canada.
+
+## §13 — UPS Track v1 requires `transId` + `transactionSrc` headers (verified CIE 2026-06-19)
+
+`GET /api/track/v1/details/{number}` **400s** without two request headers, with a misleading
+"missing field" envelope:
+- no `transactionSrc` → **`TV0011` "Missing transactionSrc"**
+- no `transId` → **`TV0001` "Missing transId"**
+
+`transId` is a caller-set unique transaction id (≤32 chars); `transactionSrc` identifies the client
+app. Track is the **only** one of the four UPS APIs that requires them — Rate, Validate, and Ship
+all accept calls without them. The node sets `transactionSrc: 'n8n-nodes-ups'` and a per-request
+`transId` (`'n8n-' + $now.toMillis()`) in `track.operation.ts`; the credential `test` (a Track
+probe) sets a static pair. Omitting them silently breaks BOTH Track and the credential Test button.
+
+CIE quirk: the Track CIE endpoint returns a **canned `DELIVERED`** response for ANY well-formed `1Z`
+number (including the all-zeros `1Z00000000000000000` used by the credential test). So a valid token
+→ HTTP 200 (test PASS); `401/403` → bad client id/secret or wrong environment. There is no genuine
+"not found" path to special-case in CIE (resolves ADR-0002's not-found VERIFY-LIVE question).

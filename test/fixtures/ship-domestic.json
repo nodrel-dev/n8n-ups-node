@@ -1,0 +1,18 @@
+{
+	"ShipmentResponse": {
+		"Response": { "ResponseStatus": { "Code": "1", "Description": "Success" } },
+		"ShipmentResults": {
+			"ShipmentIdentificationNumber": "1Z12345E8791315509",
+			"BillingWeight": { "UnitOfMeasurement": { "Code": "LBS" }, "Weight": "10" },
+			"PackageResults": [
+				{
+					"TrackingNumber": "1Z12345E8791315509",
+					"ShippingLabel": {
+						"ImageFormat": { "Code": "GIF", "Description": "GIF" },
+						"GraphicImage": "R0lGODlhAQABAAAAACw="
+					}
+				}
+			]
+		}
+	}
+}

@@ -1,0 +1,26 @@
+{
+	"RateResponse": {
+		"Response": {
+			"ResponseStatus": { "Code": "1", "Description": "Success" },
+			"Alert": [{ "Code": "110971", "Description": "Your invoice may vary from the displayed reference rates" }]
+		},
+		"RatedShipment": [
+			{
+				"Service": { "Code": "03", "Description": "UPS Ground" },
+				"BillingWeight": { "UnitOfMeasurement": { "Code": "LBS" }, "Weight": "10" },
+				"TransportationCharges": { "CurrencyCode": "USD", "MonetaryValue": "12.50" },
+				"TotalCharges": { "CurrencyCode": "USD", "MonetaryValue": "12.50" },
+				"NegotiatedRateCharges": { "TotalCharge": { "CurrencyCode": "USD", "MonetaryValue": "10.10" } },
+				"GuaranteedDelivery": { "BusinessDaysInTransit": "3", "DeliveryByTime": "End of Day" },
+				"RatedShipmentAlert": [{ "Code": "110971", "Description": "Ground saver eligible" }]
+			},
+			{
+				"Service": { "Code": "02", "Description": "UPS 2nd Day Air" },
+				"BillingWeight": { "UnitOfMeasurement": { "Code": "LBS" }, "Weight": "10" },
+				"TotalCharges": { "CurrencyCode": "USD", "MonetaryValue": "28.40" },
+				"NegotiatedRateCharges": { "TotalCharge": { "CurrencyCode": "USD", "MonetaryValue": "24.00" } },
+				"GuaranteedDelivery": { "BusinessDaysInTransit": "2", "DeliveryByTime": "10:30 A.M." }
+			}
+		]
+	}
+}
