@@ -7,7 +7,7 @@
 The node has no database. "Data model" here means the in-memory shapes that flow from n8n node
 parameters → pure cores → UPS request bodies, and from UPS responses → pure cores → n8n output. The
 typed shapes live in
-[core/types.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/types.ts);
+[core/types.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/types.ts);
 they are deliberately free of any n8n coupling so the cores stay unit-testable (Principle 10).
 
 ## Shapes
@@ -191,12 +191,12 @@ not `displayOptions` visibility.
 
 | Shape / logic | Source |
 | ------------- | ------ |
-| Typed shapes | [core/types.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/types.ts) |
-| Address assembly | [core/toUpsAddress.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/toUpsAddress.ts), [core/toXavAddress.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/toXavAddress.ts) |
-| Rate shaping | [core/flattenRates.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/flattenRates.ts) |
-| Track shaping | [core/mapTrackStatus.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/mapTrackStatus.ts) |
-| Address-validation shaping | [core/shapeCandidates.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/shapeCandidates.ts) |
-| Customs forms | [core/buildCommodities.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/buildCommodities.ts), [core/buildInternationalForms.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/buildInternationalForms.ts) |
-| Label / forms / charges extraction | [core/extractLabel.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/extractLabel.ts), [core/extractForms.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/extractForms.ts), [core/extractCharges.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/extractCharges.ts) |
-| Money + international predicate | [core/toMoney.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/toMoney.ts), [core/isInternational.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/isInternational.ts) |
-| Parameter readers + field builders | [resources/shipping/shared.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/shipping/shared.ts) |
+| Typed shapes | [core/types.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/types.ts) |
+| Address assembly | [core/toUpsAddress.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/toUpsAddress.ts), [core/toXavAddress.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/toXavAddress.ts) |
+| Rate shaping | [core/flattenRates.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/flattenRates.ts) |
+| Track shaping | [core/mapTrackStatus.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/mapTrackStatus.ts) |
+| Address-validation shaping | [core/shapeCandidates.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/shapeCandidates.ts) |
+| Customs forms | [core/buildCommodities.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/buildCommodities.ts), [core/buildInternationalForms.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/buildInternationalForms.ts) |
+| Label / forms / charges extraction | [core/extractLabel.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/extractLabel.ts), [core/extractForms.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/extractForms.ts), [core/extractCharges.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/extractCharges.ts) |
+| Money + international predicate | [core/toMoney.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/toMoney.ts), [core/isInternational.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/isInternational.ts) |
+| Parameter readers + field builders | [resources/shipping/shared.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/shared.ts) |

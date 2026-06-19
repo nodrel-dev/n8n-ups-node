@@ -3,7 +3,7 @@
   "version": "0.3.1",
   "description": "n8n community node for UPS: rating, tracking, and address validation via the UPS REST API.",
   "license": "MIT",
-  "homepage": "https://github.com/nodrel-dev/n8n-nodes-ups",
+  "homepage": "https://github.com/nodrel-dev/n8n-ups-node",
   "keywords": [
     "n8n-community-node-package"
   ],
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nodrel-dev/n8n-nodes-ups.git"
+    "url": "https://github.com/nodrel-dev/n8n-ups-node.git"
   },
   "scripts": {
     "build": "n8n-node build",

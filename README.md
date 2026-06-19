@@ -8,11 +8,11 @@ Track shipments · validate addresses · quote rates · create labels (with inte
 
 [![npm version](https://img.shields.io/npm/v/@nodrel-dev/n8n-nodes-ups?logo=npm&color=cb3837)](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups)
 [![npm downloads](https://img.shields.io/npm/dm/@nodrel-dev/n8n-nodes-ups)](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups)
-[![CI](https://github.com/nodrel-dev/n8n-nodes-ups/actions/workflows/ci.yml/badge.svg)](https://github.com/nodrel-dev/n8n-nodes-ups/actions/workflows/ci.yml)
+[![CI](https://github.com/nodrel-dev/n8n-ups-node/actions/workflows/ci.yml/badge.svg)](https://github.com/nodrel-dev/n8n-ups-node/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/npm/l/@nodrel-dev/n8n-nodes-ups)](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups)
 [![published with provenance](https://img.shields.io/badge/published%20with-provenance-3b82f6?logo=npm)](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups#provenance)
 
-[Installation](#installation) · [Operations](#operations) · [Credentials](#credentials) · [Shipper Profiles](#shipper-profiles) · [Usage](#usage) · [npm](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups) · [UPS Developer Portal](https://developer.ups.com/) · [Report an issue](https://github.com/nodrel-dev/n8n-nodes-ups/issues)
+[Installation](#installation) · [Operations](#operations) · [Credentials](#credentials) · [Shipper Profiles](#shipper-profiles) · [Usage](#usage) · [npm](https://www.npmjs.com/package/@nodrel-dev/n8n-nodes-ups) · [UPS Developer Portal](https://developer.ups.com/) · [Report an issue](https://github.com/nodrel-dev/n8n-ups-node/issues)
 
 </div>
 

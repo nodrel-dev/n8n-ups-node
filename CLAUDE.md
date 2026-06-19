@@ -39,7 +39,7 @@ If a rule is better enforced by CI or a lint/hook check, prefer that over relyin
 
 ## Public vs private split
 
-This public repo (`nodrel-dev/n8n-nodes-ups`) ships only what's safe to publish: the
+This public repo (`nodrel-dev/n8n-ups-node`) ships only what's safe to publish: the
 node source, public docs (`README.md`, `docs/` incl. the public ADRs, `CONTEXT.md`,
 `AGENTS.md`/`.agents/`), and config. Everything sensitive lives in a **private companion
 repo**, `nodrel-dev/n8n-ups-node-internal`, cloned into `internal/` (gitignored here):

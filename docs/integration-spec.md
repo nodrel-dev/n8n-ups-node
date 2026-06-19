@@ -333,11 +333,11 @@ international trigger is the runtime `isInternational` predicate, **not** field 
 
 | Operation / concern | Source |
 | ------------------- | ------ |
-| Track | [resources/tracking/track.operation.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/tracking/track.operation.ts) |
-| Validate | [resources/address/validate.operation.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/address/validate.operation.ts) |
-| Get Rates | [resources/shipping/getRates.operation.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/shipping/getRates.operation.ts) |
-| Create | [resources/shipping/create.operation.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/shipping/create.operation.ts) |
-| Shared shipping field builders / readers | [resources/shipping/shared.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/resources/shipping/shared.ts) |
-| Credential + test | [UpsOAuth2Api.credentials.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/credentials/UpsOAuth2Api.credentials.ts) |
-| Error mapping | [core/mapUpsError.ts](https://github.com/nodrel-dev/n8n-nodes-ups/blob/main/nodes/Ups/core/mapUpsError.ts) |
+| Track | [resources/tracking/track.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/tracking/track.operation.ts) |
+| Validate | [resources/address/validate.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/address/validate.operation.ts) |
+| Get Rates | [resources/shipping/getRates.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/getRates.operation.ts) |
+| Create | [resources/shipping/create.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/create.operation.ts) |
+| Shared shipping field builders / readers | [resources/shipping/shared.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/shared.ts) |
+| Credential + test | [UpsOAuth2Api.credentials.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/credentials/UpsOAuth2Api.credentials.ts) |
+| Error mapping | [core/mapUpsError.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/mapUpsError.ts) |
 | Live CIE traps | [docs/n8n-gotchas.md](n8n-gotchas.md) |
