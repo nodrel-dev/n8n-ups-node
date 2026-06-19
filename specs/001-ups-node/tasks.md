@@ -165,7 +165,7 @@ shippable, independently testable slice (spec §User Scenarios).
 
 - [ ] T046 Verify every operation through the AI-Agent **tool** path in the Docker harness (`scripts/harness.sh`, `n8n execute --id`), not just the normal path (Principle 11, quickstart Gate 5, SC-008).
 - [X] T047 Pinned versions confirmed live (2026-06-19): `v2409` (rating → 200, ship → 200), `v2` (address validation → 200), `v1` (track → 200 with required headers). No drift (quickstart Gate 5, `[VERIFY-LIVE]` #9).
-- [~] T048 `npm pack --dry-run` → **PASS** (2026-06-19): tarball is LICENSE + README + dist only (77 files, 28 kB; no source `.ts`, no `.env`). Scan is a **post-publish** gate — `npx @n8n/scan-community-package n8n-nodes-ups` 404s pre-publish because it fetches the *published* npm package, not local source (gotchas §6/§7, commit 98ec838). Re-run the scan after the first `npm run release`.
+- [~] T048 `npm pack --dry-run` → **PASS** (2026-06-19): tarball is LICENSE + README + dist only (77 files, 28 kB; no source `.ts`, no `.env`). Scan is a **post-publish** gate — `npx @n8n/scan-community-package n8n-nodes-ups` 404s pre-publish because it fetches the *published* npm package, not local source (gotchas §6/§7, commit 98ec838). The scan runs automatically post-publish in `release-please.yml` after the first release (merge the release-please PR).
 - [X] T049 [P] Write/refresh `README.md`: credential setup + each of the four operations + sandbox/production switch + AI-Agent tool usage (FR-015).
 - [X] T050 [P] Confirm `vitest run` is green across all 12 cores and `npm run lint` is clean (Principle 3, Principle 10).
 - [ ] T051 Run the full `quickstart.md` gate checklist end-to-end against CIE and check every `[VERIFY-LIVE]` box (Principle 12 — operation not done until its gate is checked).
@@ -312,5 +312,7 @@ Each story adds an operation without breaking the prior ones.
 
 - [P] = different files, no incomplete-task dependency.
 - The 12 pure cores are the only automated-test surface; everything else is verified live (Principle 12).
-- Commit per task or logical group (conventional commits); version/CHANGELOG via release-it.
-- Publish ONLY via `npm run release` (never raw `npm publish`); OIDC provenance (Principle 9, gotchas §7).
+- Commit per task or logical group (conventional commits); version/CHANGELOG via release-please.
+- Releases flow through the auto-generated release-please PR; merging it tags + triggers the
+  `release-please.yml` publish job (provenance). Never run a release or raw `npm publish` locally
+  (Principle 9, gotchas §7).

@@ -404,7 +404,7 @@ calling the matching pure core.
 6. **No PDF label.** UPS labels are GIF/ZPL/EPL/SPL; PDF applies only to the international Form image. (FedEx defaulted to PDF; do not copy that.)
 7. **International customs is in v1:** `InternationalForms` with a commodity `Product[]` array, plus a returned invoice PDF emitted as binary.
 8. **Billing is `PaymentInformation.ShipmentCharge`** Type 01 BillShipper; the request-side package container is `Packaging` in Ship but `PackagingType` in Rate.
-9. **Toolchain is npm + release-it,** not pnpm + release-please. Do not port the FedEx pipeline.
+9. **Toolchain is npm + release-please** (amended 2026-06-19, constitution v1.2.0; was release-it). The package manager stays npm — do not adopt pnpm.
 
 ## 14. User stories and acceptance scenarios
 
@@ -510,10 +510,10 @@ changes; re-verify the block after the rewrite.
 - **NFR-005 Verify against live (non-negotiable).** Token exchange and each endpoint's entitlement confirmed through the running n8n path against CIE.
 - **NFR-006 Secrets and provenance.** Secrets only in gitignored `.env.local`; never in logs, errors, or URLs; rotate on leak. Publish via GitHub Actions with npm OIDC Trusted Publishing.
 - **NFR-007 Resilience.** Transient-error resilience via n8n's native **Retry On Fail** (workflow-level); selective 5xx/429 bounded backoff is **deferred** (a documented deviation from Constitution Principle 7 — see `docs/adr/0001-native-retry-over-backoff.md`, since declarative routing has no error-class-selective retry knob). Respect UPS rate limits.
-- **NFR-008 Toolchain.** npm + the `n8n-node` CLI; release-it with conventional-changelog; lefthook + commitlint; Node >= 22.22; TypeScript `incremental` OFF; `npm pack --dry-run` before release; publish only via `npm run release`; do not modify the eslint config; `n8n.strict: true`.
+- **NFR-008 Toolchain.** npm + the `n8n-node` CLI; **release-please** for version/CHANGELOG/release (was release-it; amended v1.2.0); lefthook + commitlint; Node >= 22.22 locally and Node 24 in all GitHub Actions; TypeScript `incremental` OFF; `npm pack --dry-run` before release; releases via the merged release-please PR (the workflow publishes with provenance), never raw local `npm publish`; do not modify the eslint config; `n8n.strict: true`.
 - **NFR-009 Layout and pure cores.** One resource folder per operation group under `nodes/Ups/resources/`, files under 800 lines; pure cores as in section 9, unit-tested test-first.
 - **NFR-010 English-only** interface and documentation.
-- **NFR-011 Versioning.** Conventional commits; version and CHANGELOG via release-it; npm and GitHub in lockstep.
+- **NFR-011 Versioning.** Conventional commits; version and CHANGELOG via release-please; npm and GitHub in lockstep.
 
 ## 18. Success criteria
 

@@ -76,7 +76,8 @@ Integration Environment (CIE) before the matching operation is marked done (Prin
   (`FormType ["01"]` commercial Invoice only).
 
 ### Decision: Toolchain and build
-- npm + `release-it` (NOT pnpm + release-please — do not port the FedEx pipeline).
+- npm + **release-please** (amended 2026-06-19, constitution v1.2.0; was release-it). Package
+  manager stays npm; releases flow through an auto-generated release PR + `release-please.yml`.
 - `incremental` OFF (fix scaffold tsconfig); `npm pack --dry-run` before every release; tarball =
   LICENSE + README + dist only.
 - Publish via GitHub Actions OIDC Trusted Publishing + provenance (configure the trusted

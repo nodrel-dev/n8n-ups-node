@@ -14,8 +14,10 @@ Rules are imperative. Rationale lives in the imports below; do not duplicate it 
 - Zero runtime dependencies. Built-in n8n HTTP helpers only. Never add a SOAP/XML/SDK dep.
 - Node.js >= 22.22 for `n8n-node dev`. All GitHub Actions workflows pin **Node 24**
   (`actions/setup-node` `node-version: '24'`) — keep every workflow on 24, not `lts/*` or `22`.
-- Build/lint/dev/release go through the n8n-node CLI. Publish only via `npm run release`
-  (wraps `n8n-node release`); never raw `npm publish`.
+- Build/lint/dev go through the n8n-node CLI. Releases are driven by **release-please**:
+  merge the auto-generated release PR on `main` and the `release-please.yml` workflow tags,
+  publishes to npm with provenance, and scans. Never run a release or `npm publish` locally;
+  the `prepublishOnly` guard blocks raw `npm publish` (CI sets `RELEASE_MODE=true`).
 - Keep TypeScript `incremental` OFF. Run `npm pack --dry-run` before every release.
 - Set `usableAsTool: true`. Test every operation through BOTH the normal node path and
   the AI-Agent tool path (`npm run harness`).

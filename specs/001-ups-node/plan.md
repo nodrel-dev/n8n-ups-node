@@ -34,8 +34,8 @@ through the running n8n path against the UPS CIE (Principle 12).
 **Primary Dependencies**: **Zero runtime dependencies** (Principle 2, NFR-001). All HTTP via
 n8n's built-in `httpRequest` / `httpRequestWithAuthentication` helpers and declarative
 `routing`. `n8n-workflow` is a peer/dev dependency only. Dev-only: `@n8n/node-cli`, `eslint`,
-`prettier`, `release-it` + conventional-changelog, `vitest` (to be added for the pure-core
-tests), commitlint, lefthook.
+`prettier`, `vitest` (to be added for the pure-core tests), commitlint, lefthook. Releases use
+**release-please** (GitHub Action + `release-please-config.json`), not a local release dep.
 
 **Storage**: N/A (stateless node; the only persisted state is the n8n-managed OAuth token and
 the user's gitignored `.env.local` secrets).
@@ -57,9 +57,9 @@ throughput target — it processes input items one at a time (Track is one inqui
 item; Get Rates fans out one item per service).
 
 **Constraints**: No runtime deps; `incremental` OFF + `npm pack --dry-run` before release
-(gotchas §6); files **< 800 lines**, one resource folder per operation group (NFR-009); publish
-only via `n8n-node release` with OIDC provenance, never raw `npm publish` (Principle 9, gotchas
-§7); secrets only in gitignored `.env.local` (Principle 6, gotchas §10); English-only interface
+(gotchas §6); files **< 800 lines**, one resource folder per operation group (NFR-009); releases
+via release-please (the workflow publishes with OIDC provenance), never raw local `npm publish`
+(Principle 9, gotchas §7); secrets only in gitignored `.env.local` (Principle 6, gotchas §10); English-only interface
 (Principle 4).
 
 **Scale/Scope**: v1 = 4 operations, 3 resources, 1 credential, 11 pure cores. Single package,
@@ -82,7 +82,7 @@ spec Assumptions and constitution Principle 13.
 | 6 | Credentials First-Class, Never Hardcoded | **PASS** | Single `UpsOAuth2Api`; `environment` drives token URL (`$self`) and base URL (`$credentials.environment`); explicit authenticated `test` (Track probe, ADR-0002). No secret in logs/URLs/commits; `.env.local` only. |
 | 7 | Production-Grade Error Handling | **PASS (documented deviation)** | `mapUpsError` surfaces UPS `code`/`message` verbatim, classifies auth vs input vs transient, honors Continue On Fail, surfaces alerts as warnings. Bounded backoff deferred to native Retry On Fail (ADR-0001). |
 | 8 | No Competition With n8n Paid Features | **PASS** | Scope strictly UPS operations. |
-| 9 | Provenance Publishing | **PASS** | GitHub Actions + npm OIDC Trusted Publishing; no long-lived token; publish via `n8n-node release`. |
+| 9 | Provenance Publishing | **PASS** | GitHub Actions + npm OIDC Trusted Publishing; no long-lived token; release-please cuts the release, the `release-please.yml` publish job publishes with provenance. |
 | 10 | Test-First for Transformation Logic | **PASS** | 11 pure cores (incl. `mapUpsError`, `toMoney`) get vitest tests written BEFORE implementation, asserted on captured fixtures. |
 | 11 | AI-Agent Tool Compatibility | **PASS** | `usableAsTool: true`; every op tested on normal AND tool path. Single credential → gotchas §1 disambiguation N/A; leave hidden `authentication: 'header'`. |
 | 12 | Verify Against Live Behaviour | **PASS** | Every §15 verify-live item is a gate: single-app entitlement, pinned versions (v2409/v2/v1), Track error shape, CIE NY/CA limit, negotiated-rate return, international customs + phone. |

@@ -38,7 +38,7 @@ jobs:
 
       # NOTE: `@n8n/scan-community-package` is intentionally NOT run here — it scans the
       # PUBLISHED npm package (fetches from registry.npmjs.org) and 404s on an unpublished
-      # version, so it can only run post-publish. It lives in publish.yml's `scan` job.
+      # version, so it can only run post-publish. It lives in release-please.yml's `scan` job.
 
   # Optional: dual-path execution test in a real n8n container.
   # Enable once you have harness workflows committed under test/.
