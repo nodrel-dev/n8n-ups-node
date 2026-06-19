@@ -5,6 +5,11 @@ on:
   push:
     branches: [main]
 
+# Auto-cancel superseded runs for the same branch/PR.
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

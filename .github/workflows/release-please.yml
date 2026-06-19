@@ -30,6 +30,12 @@ on:
   push:
     branches: [main]
 
+# Serialize runs on main; never cancel-in-progress — a cancelled publish job could
+# leave a half-published release.
+concurrency:
+  group: release-please-main
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
