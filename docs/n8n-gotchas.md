@@ -86,3 +86,25 @@ SHA until GC.
 No node-types or execute endpoint on the public API. `PUT /workflows/{id}` needs the
 full body and a strict `settings` object (send `{"executionOrder":"v1"}` only). The
 credentials list endpoint never returns secret values.
+
+## §12 — UPS Rating `Shoptimeintransit` needs two extra containers (verified CIE 2026-06-18)
+
+`POST /api/rating/v2409/Shoptimeintransit` (the request option the Get Rates node uses to
+get transit times) 400s unless the `RateRequest.Shipment` carries BOTH:
+
+- `DeliveryTimeInformation: { PackageBillType: '03' }` — else error **`111563`** ("Delivery
+  Time Information Container is required …"). 03 = non-document; 02 = document; 04 = pallet.
+- `ShipmentTotalWeight: { UnitOfMeasurement: { Code, Description }, Weight }` — else error
+  **`111546` "Invalid Weight"**, a **misleading** message: the weight is fine, the *container*
+  is missing. UPS's `Rating.yaml` marks `ShipmentTotalWeight` **Required** for
+  `ratetimeintransit`/`shoptimeintransit`. Note `UnitOfMeasurement` here requires `Description`
+  (e.g. `"LBS"`), unlike `PackageWeight`. v1 is single-package, so total = package weight.
+
+Plain `Shop`/`Rate` request options need neither container — only the time-in-transit variants
+do. Don't trust the error text: `111546` reads like bad data but means a missing container.
+
+Two more rating realities confirmed the same day:
+- Empty `ShipmentRatingOptions.NegotiatedRatesIndicator: ''` DOES return `NegotiatedRateCharges`
+  (presence of the tag is the trigger, not a `Y` value).
+- The account's (`ShipperNumber`) registered country must equal the Shipper address country, or
+  UPS rejects with **`111617`** (Rate) / **`120120`** (Ship), regardless of the rest of the payload.

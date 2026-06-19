@@ -197,6 +197,26 @@ ALL operations to programmatic).
 Minor: `buildCommodities(items)` dropped the unused `currency` parameter (currency is a form-level
 field in `buildInternationalForms`, never per-product in the UPS schema).
 
+### Live CIE verification — session 2026-06-18 (direct REST probes + bug fixes)
+
+Ran the token exchange and per-API entitlement probes directly against the UPS CIE
+(`wwwcie.ups.com`) with real sandbox credentials, ahead of the through-n8n gates. Results:
+
+- **Gate 0 entitlement (PASS):** one OAuth app's client-credentials token (Basic auth, empty
+  scope, HTTP 200) is accepted by Track, Validate, Rate AND Ship — the single-app entitlement
+  risk (gotchas §3) is cleared.
+- **Track / Validate (API-confirmed):** Track `200` with full activity history; Validate `200`
+  with a standardized NY candidate.
+- **Get Rates — TWO blocking bugs found and fixed in `getRates.operation.ts`:**
+  1. `Shoptimeintransit` requires `DeliveryTimeInformation` (else `111563`). **Fixed.**
+  2. `Shoptimeintransit` requires `ShipmentTotalWeight` (else misleading `111546 "Invalid
+     Weight"`). **Fixed.** UPS `Rating.yaml` marks it Required for the time-in-transit options.
+  With both, CA→CA returned 8 services + published + negotiated charges + transit days.
+- **Negotiated rates [VERIFY-LIVE] (PASS):** empty `NegotiatedRatesIndicator: ''` returns
+  `NegotiatedRateCharges`; the node's existing value is correct.
+- **Account-country constraint recorded:** Shipper address country must equal the account's
+  registered country, else `111617` (Rate) / `120120` (Ship). Documented in gotchas §12.
+
 ### Remaining open tasks are all manual live-verification gates (Principle 12)
 
 T016, T023, T034, T045, T046, T047, T051 require real UPS sandbox (CIE) credentials and a running
@@ -204,6 +224,8 @@ n8n/Docker harness; T048's `@n8n/scan-community-package` requires the package to
 (it fetches from registry.npmjs.org — confirmed 404 on the unpublished package, matching the repo's
 own note). The local half of T048 (`npm pack --dry-run`) passes: tarball = LICENSE + README + dist.
 These were not executed here because no credentials, harness, or publish exist in this environment.
+The Rate bugs above mean T034 still needs a through-node re-run, but the UPS-side contract is now
+proven; Gate 0 entitlement and the negotiated-rate sub-gate are satisfied.
 
 ---
 

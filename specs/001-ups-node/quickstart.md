@@ -10,6 +10,9 @@ is not done until its box is checked. Details live in [contracts/](./contracts/)
 - A UPS developer account, an OAuth app (Client ID + Secret), and a UPS account number.
 - Secrets in a **gitignored `.env.local`** only — never committed (Principle 6, gotchas §10).
 - UPS CIE test data (UPS-published tracking numbers; NY/CA addresses for Validate).
+- **The Shipper address country in Rate/Create must match the country your UPS account is
+  registered in**, or UPS rejects with `111617` (Rate) / `120120` (Ship) — verified CIE,
+  gotchas §12. (E.g. a CA-registered account must rate/ship from a CA origin.)
 
 ## Setup
 ```bash
@@ -43,8 +46,11 @@ the credential **Test** button.
 
 ### Gate 3 — Get Rates (US3)
 - [ ] `Shoptimeintransit` returns multiple services with transit times; one output item per service.
-- [ ] `NegotiatedRatesIndicator` + account number → `NegotiatedRateCharges`; when all null, one
-      request-level alert appears (FR-007).
+      NOTE: requires BOTH `DeliveryTimeInformation` and `ShipmentTotalWeight` in the body or UPS
+      400s (`111563` / misleading `111546`); the node now sends both (gotchas §12).
+- [x] `NegotiatedRatesIndicator` + account number → `NegotiatedRateCharges` — **verified CIE
+      2026-06-18**: CA→CA returned 8 services with published + negotiated charges + transit days
+      via empty `NegotiatedRatesIndicator: ''`. When all null, one request-level alert appears (FR-007).
 - [ ] Missing account number → rejected at boundary before any UPS call.
 - [ ] Cross-border quote accepts origin/destination + commodity value; non-fatal alerts surface
       as warnings.

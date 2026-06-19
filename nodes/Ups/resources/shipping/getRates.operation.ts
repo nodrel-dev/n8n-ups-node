@@ -54,12 +54,26 @@ async function ratesPreSend(
 
 	const pkg = readPackage(get);
 	const currency = (get('customsCurrency', 'USD') as string) || 'USD';
+	const weight = (get('weight', 1) as number) || 0;
+	const weightUnit = (get('weightUnit', 'LBS') as string) || 'LBS';
 
 	const shipment: Record<string, unknown> = {
 		Shipper: { ShipperNumber: accountNumber, Address: toUpsAddress(shipper) },
 		ShipTo: { Address: toUpsAddress(shipTo) },
 		ShipFrom: { Address: toUpsAddress(effectiveShipFrom) },
 		PickupType: { Code: '01' },
+		// Shoptimeintransit REQUIRES both DeliveryTimeInformation and ShipmentTotalWeight or UPS
+		// rejects the request — 111563 (missing DeliveryTimeInformation) and 111546 ("Invalid
+		// Weight", actually the missing ShipmentTotalWeight). Both verified live against CIE.
+		// PackageBillType 03 = non-document (standard package); 02 = document, 04 = pallet.
+		// v1 is single-package, so the shipment total weight equals the package weight.
+		DeliveryTimeInformation: { PackageBillType: '03' },
+		ShipmentTotalWeight: {
+			UnitOfMeasurement: { Code: weightUnit, Description: weightUnit },
+			Weight: String(weight),
+		},
+		// Empty NegotiatedRatesIndicator still requests negotiated rates (verified live: the
+		// NegotiatedRateCharges come back populated alongside published rates).
 		ShipmentRatingOptions: { NegotiatedRatesIndicator: '' },
 		Package: { PackagingType: { Code: '02' }, ...pkg },
 	};

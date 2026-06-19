@@ -27,6 +27,9 @@ Standardized candidate address(es), residential/commercial Classification, and a
 A set of services, each with negotiated rate (nullable), published rate, currency, transit time.
 - Maps to `RateLine[]`, fanned out **one output item per service**.
 - When every line's negotiated rate is null → one request-level alert on the first item.
+- Request side: `Shoptimeintransit` requires both `DeliveryTimeInformation` and
+  `ShipmentTotalWeight` containers in the body, or UPS 400s (`111563` / misleading `111546`);
+  `ratesPreSend` adds both (verified CIE — gotchas §12, contracts/get-rates.md).
 
 ### Shipment / Label
 A created shipment: tracking number(s), label document, and (international) customs invoice.
