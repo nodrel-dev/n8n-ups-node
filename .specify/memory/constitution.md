@@ -13,7 +13,7 @@ Sync Impact Report (1.0.0, 2026-06-18)
 - Modified principles (placeholders → concrete + UPS-specific notes folded in):
   - P1 Single-Service Scope → scoped to UPS, four v1 operations named
   - P2 Zero Runtime Dependencies → unchanged in intent; ties to NFR-001
-  - P3 TypeScript + n8n Guidelines + Linter Clean → scan target n8n-nodes-ups
+  - P3 TypeScript + n8n Guidelines + Linter Clean → scan target @nodrel-dev/n8n-nodes-ups
   - P4 English-Only Interface and Documentation → unchanged (NFR-010)
   - P5 Declarative Style Preferred → named programmatic exceptions (NFR-002)
   - P6 Credentials Are First-Class and Never Hardcoded → single UpsOAuth2Api credential, environment-driven hosts (§4)
@@ -44,7 +44,7 @@ Sync Impact Report (1.0.0, 2026-06-18)
 **Service:** UPS
 **Ratified:** 2026-06-18
 **Last Amended:** 2026-06-19
-**Version:** 1.2.0
+**Version:** 1.3.0
 
 ---
 
@@ -63,9 +63,12 @@ COPIED from the FedEx scaffold, never imported as a published runtime package.
 
 ## Principle 3: TypeScript + n8n Guidelines + Linter Clean (NON-NEGOTIABLE)
 TypeScript, following n8n's node guidelines. `n8n.strict: true`. Must pass
-`npx @n8n/scan-community-package n8n-nodes-ups` with zero errors. Built with the `n8n-node`
-CLI. The node identifier in `Ups.node.json` MUST be `n8n-nodes-ups.ups`
-(`<package>.<nodeName>`); the wrong-identifier format bounced the FedEx submission.
+`npx @n8n/scan-community-package @nodrel-dev/n8n-nodes-ups` with zero errors. Built with the
+`n8n-node` CLI. The node identifier in `Ups.node.json` MUST be `@nodrel-dev/n8n-nodes-ups.ups`
+(`<package>.<nodeName>`, where `<package>` is the **scoped** npm name); the wrong-identifier format
+bounced the FedEx submission. (Amended 2026-06-19, v1.3.0: the npm package was rescoped from the
+unscoped `n8n-nodes-ups` to `@nodrel-dev/n8n-nodes-ups` to match the FedEx node; the GitHub repo
+slug stays `nodrel-dev/n8n-nodes-ups`.)
 
 ## Principle 4: English-Only Interface and Documentation
 All parameter names, descriptions, help text, errors, and README content in English
@@ -208,3 +211,4 @@ materially expanded guidance; PATCH for clarifications.
 | 1.0.0 | 2026-06-18 | Initial ratification: filled for UPS (n8n-nodes-ups); added Principle 13 (International Scope Boundary); folded in auth contract, locked decisions, deltas, and NFRs. |
 | 1.1.0 | 2026-06-18 | Principle 10: added `mapUpsError` (ADR-0004) and `toMoney` to the test-first pure-core list (grill-with-docs design session). |
 | 1.2.0 | 2026-06-19 | Release toolchain changed from release-it to **release-please** (reverses the §13 delta that forbade it). Package manager stays npm. Releases now flow through an auto-generated release PR + `release-please.yml` (publish with provenance gated on `release_created`). All GitHub Actions pinned to Node 24. NFR-008/NFR-011 and gotchas §7 updated accordingly. |
+| 1.3.0 | 2026-06-19 | npm package **rescoped** from `n8n-nodes-ups` to `@nodrel-dev/n8n-nodes-ups` to match the FedEx node. Updates the P3 scan target and node identifier (`@nodrel-dev/n8n-nodes-ups.ups`). The GitHub repo slug (`nodrel-dev/n8n-nodes-ups`), the `ups` internal node name, and the `transactionSrc`/`CustomerContext` UPS client identifiers are unchanged. Requires a fresh npm Trusted Publisher for the scoped name and deprecating the old unscoped package. |

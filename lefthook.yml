@@ -3,7 +3,7 @@
 # Note: @n8n/scan-community-package analyzes a PUBLISHED npm package (it fetches
 # the package from the registry by name), so it cannot run as a git hook before
 # the first publish — it will 404. Run it manually after publishing instead:
-#   npx --yes @n8n/scan-community-package n8n-nodes-ups
+#   npx --yes @n8n/scan-community-package @nodrel-dev/n8n-nodes-ups
 # The real local verification gate is `n8n-node lint` (strict mode), below.
 
 pre-commit:
