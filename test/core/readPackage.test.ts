@@ -1,6 +1,6 @@
 /* eslint-disable @n8n/community-nodes/no-restricted-imports -- dev-only vitest tests; not part of the shipped node (files: dist only) */
 import { describe, it, expect } from 'vitest';
-import { readPackage, type ParamGetter } from '../../nodes/Ups/resources/shipping/shared';
+import { readPackage, type ParamGetter } from '../../nodes/Ups/resources/shipping/readParties';
 
 /**
  * n8n's getNodeParameter THROWS "Could not get parameter" when both the resolved value

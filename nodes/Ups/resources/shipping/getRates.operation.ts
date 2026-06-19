@@ -6,20 +6,12 @@ import {
 	type INodeExecutionData,
 	type INodeProperties,
 } from 'n8n-workflow';
-import { toUpsAddress } from '../../core/toUpsAddress';
+import { buildRateRequest } from '../../core/buildRateRequest';
 import { flattenRates } from '../../core/flattenRates';
-import { isInternational } from '../../core/isInternational';
 import { mapUpsError } from '../../core/mapUpsError';
-import {
-	addressFields,
-	readAddress,
-	readPackage,
-	packageFields,
-	loadShipperProfile,
-	readShipper,
-	CURRENCY_OPTIONS,
-	type ParamGetter,
-} from './shared';
+import { addressFields, packageFields, CURRENCY_OPTIONS } from './shippingFields';
+import { readPackage, resolveShipmentParties, type ParamGetter } from './readParties';
+import { loadShipperProfile } from './shipperProfile';
 
 const showOnlyForRates = {
 	operation: ['getRates'],
@@ -39,26 +31,20 @@ async function ratesPreSend(
 	// IExecuteSingleFunctions.getNodeParameter is (name, fallback) — bridge it to the shared readers.
 	const get: ParamGetter = (name, fallback) => this.getNodeParameter(name, fallback as never);
 
-	// Shipper (address + account number) resolves explicit field > Shipper Profile credential >
-	// default (ADR-0005). loadShipperProfile returns null when no profile is attached.
+	// resolveShipmentParties owns the shared "resolve Shipper (profile precedence, ADR-0005) → read
+	// ShipTo/ShipFrom → pick the Effective Origin → classify international" sequence (ADR-0003), so Get
+	// Rates and Create can never disagree on it. loadShipperProfile returns null when no profile is set.
 	const profile = await loadShipperProfile(this);
-	const resolvedShipper = readShipper(get, profile);
-	const accountNumber = resolvedShipper.accountNumber;
-	if (!accountNumber) {
+	const parties = resolveShipmentParties(get, profile);
+	if (!parties.accountNumber) {
 		throw new NodeOperationError(node, 'An account number is required to request rates.', {
 			description:
 				'Enter your UPS account number (ShipperNumber) on the Get Rates operation, or attach a UPS Shipper Profile credential that supplies one.',
 		});
 	}
 
-	const shipper = resolvedShipper.address;
-	const shipTo = readAddress(get, 'shipTo');
-	const shipFrom = readAddress(get, 'shipFrom');
-	const hasShipFrom = shipFrom.addressLines.length > 0 || shipFrom.city.length > 0;
-	const effectiveShipFrom = hasShipFrom ? shipFrom : shipper;
-
 	const customsValue = (get('customsValue', 0) as number) || 0;
-	if (isInternational({ shipFrom: effectiveShipFrom, shipper, shipTo }) && customsValue <= 0) {
+	if (parties.international && customsValue <= 0) {
 		throw new NodeOperationError(
 			node,
 			'A customs value is required for an international shipment.',
@@ -69,43 +55,19 @@ async function ratesPreSend(
 		);
 	}
 
-	const pkg = readPackage(get);
-	const currency = (get('customsCurrency', 'USD') as string) || 'USD';
-	const weight = (get('weight', 1) as number) || 0;
-	const weightUnit = (get('weightUnit', 'LBS') as string) || 'LBS';
-
-	const shipment: Record<string, unknown> = {
-		Shipper: { ShipperNumber: accountNumber, Address: toUpsAddress(shipper) },
-		ShipTo: { Address: toUpsAddress(shipTo) },
-		ShipFrom: { Address: toUpsAddress(effectiveShipFrom) },
-		PickupType: { Code: '01' },
-		// Shoptimeintransit REQUIRES both DeliveryTimeInformation and ShipmentTotalWeight or UPS
-		// rejects the request — 111563 (missing DeliveryTimeInformation) and 111546 ("Invalid
-		// Weight", actually the missing ShipmentTotalWeight). Both verified live against CIE.
-		// PackageBillType 03 = non-document (standard package); 02 = document, 04 = pallet.
-		// v1 is single-package, so the shipment total weight equals the package weight.
-		DeliveryTimeInformation: { PackageBillType: '03' },
-		ShipmentTotalWeight: {
-			UnitOfMeasurement: { Code: weightUnit, Description: weightUnit },
-			Weight: String(weight),
-		},
-		// Empty NegotiatedRatesIndicator still requests negotiated rates (verified live: the
-		// NegotiatedRateCharges come back populated alongside published rates).
-		ShipmentRatingOptions: { NegotiatedRatesIndicator: '' },
-		Package: { PackagingType: { Code: '02' }, ...pkg },
-	};
-
-	if (customsValue > 0) {
-		shipment.InvoiceLineTotal = { CurrencyCode: currency, MonetaryValue: String(customsValue) };
-	}
-
-	requestOptions.body = {
-		RateRequest: {
-			Request: { TransactionReference: { CustomerContext: 'n8n-nodes-ups rate' } },
-			PickupType: { Code: '01' },
-			Shipment: shipment,
-		},
-	};
+	// Body assembly lives in the pure buildRateRequest core (fixture-tested for the Shoptimeintransit
+	// twin-container rule and the negotiated-rate / InvoiceLineTotal shape); the preSend only reads.
+	requestOptions.body = buildRateRequest({
+		accountNumber: parties.accountNumber,
+		shipper: parties.shipper.address,
+		shipTo: parties.shipTo,
+		effectiveShipFrom: parties.effectiveShipFrom,
+		package: readPackage(get),
+		weight: (get('weight', 1) as number) || 0,
+		weightUnit: (get('weightUnit', 'LBS') as string) || 'LBS',
+		customsValue,
+		currency: (get('customsCurrency', 'USD') as string) || 'USD',
+	});
 	return requestOptions;
 }
 

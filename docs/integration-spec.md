@@ -337,7 +337,10 @@ international trigger is the runtime `isInternational` predicate, **not** field 
 | Validate | [resources/address/validate.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/address/validate.operation.ts) |
 | Get Rates | [resources/shipping/getRates.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/getRates.operation.ts) |
 | Create | [resources/shipping/create.operation.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/create.operation.ts) |
-| Shared shipping field builders / readers | [resources/shipping/shared.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/shared.ts) |
+| Shipping UI field builders | [resources/shipping/shippingFields.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/shippingFields.ts) |
+| Shipping param readers + Effective Origin | [resources/shipping/readParties.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/readParties.ts) |
+| Shipper Profile precedence (ADR-0005) | [resources/shipping/shipperProfile.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/resources/shipping/shipperProfile.ts) |
+| Request-body builders | [core/buildRateRequest.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/buildRateRequest.ts), [core/buildShipmentRequest.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/buildShipmentRequest.ts) |
 | Credential + test | [UpsOAuth2Api.credentials.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/credentials/UpsOAuth2Api.credentials.ts) |
 | Error mapping | [core/mapUpsError.ts](https://github.com/nodrel-dev/n8n-ups-node/blob/main/nodes/Ups/core/mapUpsError.ts) |
 | Live CIE traps | [docs/n8n-gotchas.md](n8n-gotchas.md) |
