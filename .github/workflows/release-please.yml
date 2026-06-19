@@ -1,0 +1,103 @@
+# Release automation for this n8n community node — driven by release-please.
+#
+# ─── HOW IT WORKS ──────────────────────────────────────────────────────────────
+#
+# 1. release-please watches `main`. On each push it maintains a "release PR" that
+#    bumps the version and updates CHANGELOG.md from the conventional-commit history
+#    (feat → minor, fix → patch, feat!/BREAKING CHANGE → major). Config lives in
+#    release-please-config.json + .release-please-manifest.json.
+# 2. When you MERGE that release PR, release-please tags the commit `v<version>`
+#    and creates the GitHub release. Its `release_created` output flips to true.
+# 3. The `publish` job (same workflow, gated on `release_created`) then publishes to
+#    npm WITH provenance, and `scan` runs the verified-node gate post-publish.
+#
+# The publish job lives in THIS workflow (not a separate tag-triggered one) on
+# purpose: a tag/release created by the default GITHUB_TOKEN does NOT trigger other
+# workflows (GitHub's recursion guard), so a standalone publish.yml would never fire.
+#
+# ─── ONE-TIME SETUP ────────────────────────────────────────────────────────────
+#
+# Publishing uses npm provenance (required for n8n Cloud verification from 2026-05-01).
+# Option A — OIDC Trusted Publishing (recommended, no secrets):
+#   npmjs.com → package settings → Trusted Publishers → add this repo + workflow
+#   "release-please.yml". Leave NPM_TOKEN unset; Node 24 ships npm 11 which performs
+#   the OIDC token exchange automatically (needs id-token: write + registry-url).
+# Option B — npm Automation Token (fallback): add NPM_TOKEN to repo secrets.
+
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # create the release commit, tag, and GitHub release
+      pull-requests: write   # open/maintain the release PR
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    name: Publish to npm
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # mint the OIDC token for npm provenance
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          # Required for npm provenance / OIDC Trusted Publishing token exchange.
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install dependencies
+        run: 'npm ci'
+
+      - name: Publish with provenance
+        # `npm run release` (n8n-node release) auto-detects CI and runs lint + build +
+        # `npm publish` with NPM_CONFIG_PROVENANCE=true (and RELEASE_MODE=true to pass the
+        # prepublish guard). It does NOT bump/tag here — release-please already did that.
+        # Option A (OIDC): leave NPM_TOKEN unset. Option B (token): it is written to .npmrc.
+        run: |
+          [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+          npm run release
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  scan:
+    name: Scan published package (verified-node gate)
+    needs: [release-please, publish]
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # First-publish read-CDN propagation can lag ~5 minutes (gotchas §7); wait to
+      # avoid a spurious 404 before scanning the published version.
+      - name: Wait for npm CDN propagation
+        run: sleep 300
+
+      - name: Scan community package
+        run: npx --yes @n8n/scan-community-package "$(node -p "require('./package.json').name")"

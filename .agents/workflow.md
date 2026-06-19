@@ -87,11 +87,9 @@ commands. Short overview of the commands:
   `n8n-node cloud-support enable` to enable strict mode + default ESLint config
   or `n8n-node cloud-support disable` to allow custom ESLint config (disables
   cloud eligibility)
-- `n8n-node release` - publish your community node package to npm.
-  This command handles the complete release process using `release-it`:
-  - Builds the node
-  - Runs linting checks
-  - Updates changelog
-  - Creates git tags
-  - Creates GitHub releases
-  - Publishes to npm
+- Releasing this project is driven by **release-please**, NOT `n8n-node release` locally:
+  - Conventional commits on `main` accrue into an auto-generated release PR (version bump +
+    CHANGELOG). Merging that PR tags `v<version>` and creates the GitHub release.
+  - The `release-please.yml` publish job (gated on `release_created`) then runs
+    `npm run release`, which in CI builds, lints, and `npm publish`es to npm WITH provenance.
+  - Do not run `n8n-node release` / `npm publish` locally — the `prepublishOnly` guard blocks it.
