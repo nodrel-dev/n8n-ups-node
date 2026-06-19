@@ -13,6 +13,7 @@ import { buildCommodities, type CommodityLineInput } from '../../core/buildCommo
 import { buildInternationalForms, type CustomsInput } from '../../core/buildInternationalForms';
 import { extractLabel, type LabelFormat } from '../../core/extractLabel';
 import { extractForms } from '../../core/extractForms';
+import { extractCharges } from '../../core/extractCharges';
 import { mapUpsError } from '../../core/mapUpsError';
 import { addressFields, readAddress, readPackage, type ParamGetter } from './shared';
 
@@ -52,6 +53,13 @@ function readCommodities(get: ParamGetter): CommodityLineInput[] {
 		}));
 }
 
+// UPS requires InvoiceDate (yyyyMMdd) on the commercial invoice for international shipments —
+// omitting it returns 128066 "Invalid or missing invoice date" (verified live CIE). Default to
+// today (UTC) when the user leaves it blank, matching the typical ship-today expectation.
+function todayYyyyMmdd(): string {
+	return new Date().toISOString().slice(0, 10).replace(/-/g, '');
+}
+
 function readCustoms(get: ParamGetter): CustomsInput {
 	const soldTo = readAddress(get, 'soldTo');
 	return {
@@ -59,6 +67,7 @@ function readCustoms(get: ParamGetter): CustomsInput {
 		currency: get('customsCurrency', 'USD') as string,
 		termsOfShipment: get('customsTermsOfShipment', 'DDU') as string,
 		invoiceNumber: (get('customsInvoiceNumber', '') as string) || undefined,
+		invoiceDate: (get('customsInvoiceDate', '') as string).trim() || todayYyyyMmdd(),
 		soldTo: {
 			name: get('soldToName', '') as string,
 			addressLines: soldTo.addressLines,
@@ -83,30 +92,41 @@ function buildShipmentBody(get: ParamGetter, international: boolean): IDataObjec
 
 	const shipperName = get('shipperName', '') as string;
 	const shipToName = get('shipToName', '') as string;
+	const shipFromName = (get('shipFromName', shipperName) as string) || shipperName;
 	const shipperPhone = get('shipperPhone', '') as string;
 	const shipToPhone = get('shipToPhone', '') as string;
 
+	// UPS requires an AttentionName on each party for international shipments — omitting ShipFrom's
+	// returns 120301 "Missing or invalid ship from attention name" (verified live CIE). Mirror the
+	// party Name into AttentionName when present; harmless on domestic, mandatory cross-border.
 	const shipment: IDataObject = {
 		Description: 'Shipment',
 		Shipper: {
 			Name: shipperName,
+			...(shipperName ? { AttentionName: shipperName } : {}),
 			ShipperNumber: accountNumber,
 			...(shipperPhone ? { Phone: { Number: shipperPhone } } : {}),
 			Address: toUpsAddress(shipper),
 		},
 		ShipTo: {
 			Name: shipToName,
+			...(shipToName ? { AttentionName: shipToName } : {}),
 			...(shipToPhone ? { Phone: { Number: shipToPhone } } : {}),
 			Address: toUpsAddress(shipTo),
 		},
 		ShipFrom: {
-			Name: (get('shipFromName', shipperName) as string) || shipperName,
+			Name: shipFromName,
+			...(shipFromName ? { AttentionName: shipFromName } : {}),
 			Address: toUpsAddress(effectiveShipFrom),
 		},
 		// Billing: shipper pays transportation (Type 01). International duties are DDU — no Type 02.
 		PaymentInformation: {
 			ShipmentCharge: { Type: '01', BillShipper: { AccountNumber: accountNumber } },
 		},
+		// Request negotiated rates so the response carries NegotiatedRateCharges (the actually-billed
+		// cost) alongside published — same mechanism as Get Rates; presence of the tag is the trigger.
+		// extractCharges surfaces both; negotiated stays null when the account isn't entitled on the lane.
+		ShipmentRatingOptions: { NegotiatedRatesIndicator: '' },
 		Service: { Code: service },
 		Package: {
 			Packaging: { Code: '02' },
@@ -179,6 +199,7 @@ async function createPostReceive(
 	const labelFormat = this.getNodeParameter('labelFormat', 'GIF') as string;
 	const label = extractLabel(response.body as object, labelFormat as LabelFormat);
 	const forms = extractForms(response.body as object);
+	const charges = extractCharges(response.body as object);
 
 	const binary: INodeExecutionData['binary'] = {};
 	if (label.labels[0]) {
@@ -203,6 +224,7 @@ async function createPostReceive(
 				shipmentId: label.shipmentId,
 				trackingNumbers: label.labels.map((x) => x.trackingNumber),
 				international: forms.length > 0,
+				charges,
 			},
 			binary: Object.keys(binary).length > 0 ? binary : undefined,
 		},
@@ -350,6 +372,16 @@ export const createOperationDescription: INodeProperties[] = [
 		type: 'string',
 		default: '',
 		displayOptions: { show: showOnlyForCreate },
+	},
+	{
+		displayName: 'Invoice Date',
+		name: 'customsInvoiceDate',
+		type: 'string',
+		default: '',
+		placeholder: 'yyyyMMdd',
+		displayOptions: { show: showOnlyForCreate },
+		description:
+			'Commercial-invoice date in yyyyMMdd format. UPS requires it for international shipments; leave blank to use today (UTC).',
 	},
 	...addressFields({
 		prefix: 'soldTo',

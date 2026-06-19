@@ -193,10 +193,16 @@ export function readPackage(get: ParamGetter): UpsPackage {
 		PackageWeight: { UnitOfMeasurement: { Code: weightUnit }, Weight: String(weight) },
 	};
 
-	const dims = get('dimensions.dimension', undefined) as
-		| { length?: number; width?: number; height?: number }
-		| undefined;
-	if (dims && (dims.length || dims.width || dims.height)) {
+	// Fallback must NOT be `undefined`: n8n's getNodeParameter throws "Could not get parameter"
+	// when both the resolved value and the fallback are undefined. `dimensions` is a fixedCollection
+	// that defaults to `{}`, so `dimensions.dimension` is absent until the user adds a row — an
+	// `undefined` fallback would throw on every dimension-less Rate/Create call (verified live CIE).
+	const dims = get('dimensions.dimension', {}) as {
+		length?: number;
+		width?: number;
+		height?: number;
+	};
+	if (dims.length || dims.width || dims.height) {
 		const dimUnit = get('dimensionUnit', 'IN') as string;
 		pkg.Dimensions = {
 			UnitOfMeasurement: { Code: dimUnit },
