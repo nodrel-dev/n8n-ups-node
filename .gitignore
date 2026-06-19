@@ -141,46 +141,22 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
-ups-api-documentation/AddressValidation-Ready.yaml
-ups-api-documentation/AddressValidation.yaml
-ups-api-documentation/CommerceGuard.yaml
-ups-api-documentation/CustomsDetailV2.yaml
-ups-api-documentation/DangerousGoods-Ready.yaml
-ups-api-documentation/DangerousGoods.yaml
-ups-api-documentation/DeliveryDefense-Ready.yaml
-ups-api-documentation/DeliveryDefense.yaml
-ups-api-documentation/DeliveryIntercept.yaml
-ups-api-documentation/Forwarding.yaml
-ups-api-documentation/GlobalCheckout.yaml
-ups-api-documentation/InteractiveDescriptionGuidance.yaml
-ups-api-documentation/LandedCost-Ready.yaml
-ups-api-documentation/LandedCost.yaml
-ups-api-documentation/LICENSE
-ups-api-documentation/Locator.yaml
-ups-api-documentation/OAuthAuthCode-Ready.yaml
-ups-api-documentation/OAuthAuthCode.yaml
-ups-api-documentation/OAuthClientCredentials-Ready.yaml
-ups-api-documentation/OAuthClientCredentials.yaml
-ups-api-documentation/Paperless-Ready.yaml
-ups-api-documentation/Paperless.yaml
-ups-api-documentation/Pickup.yaml
-ups-api-documentation/PickupNotificationPreferences.yaml
-ups-api-documentation/PreNotification-Ready.yaml
-ups-api-documentation/PreNotification.yaml
-ups-api-documentation/QuantumView-Ready.yaml
-ups-api-documentation/QuantumView.yaml
-ups-api-documentation/Rating.yaml
-ups-api-documentation/Shipping.yaml
-ups-api-documentation/TimeInTransit.yaml
-ups-api-documentation/Tracking-Ready.yaml
-ups-api-documentation/Tracking.yaml
-ups-api-documentation/TradeDirect.yaml
-ups-api-documentation/UPSExportAssure.yaml
-ups-api-documentation/UPSTrackAlert-Ready.yaml
-ups-api-documentation/UPSTrackAlert.yaml
-ups-api-documentation/UPSTrackAlertEnhanced-Ready.yaml
-ups-api-documentation/UPSTrackAlertEnhanced.yaml
-ups-api-documentation/WorldEaseShipmentManagement.yaml
+
+# --- Private companion repo ---------------------------------------------
+# internal/ is its OWN private git repo
+# (github.com/nodrel-dev/n8n-ups-node-internal), NOT a subfolder of this public
+# repo. It holds the copyrighted UPS API specs (ups-api-documentation/), the
+# commercial build brief (ups-node-build-brief.md), and the spec-kit planning
+# material (specs/, .specify/ — including the constitution). On a fresh clone of
+# this public repo, restore it with:   ./bootstrap-internal.sh
+# Never commit anything under internal/ to this public repo.
+/internal/
+
+# Internal tooling / machine-local scratch (kept local, never published)
+/.claude/
+/.specify/
+/.vscode/
+/.harness-stage/
 
 # --- added by n8n-node-scaffold ---
 .env.local
