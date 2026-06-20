@@ -26,7 +26,7 @@ export class UpsShipperProfileApi implements ICredentialType {
 	// signal the user reacted to was optionality. (UX finding 2-Cred.3 / Recipe B.)
 	displayName = 'UPS Shipper Profile (Optional) API';
 
-	icon: Icon = 'file:ups.svg';
+	icon: Icon = { light: 'file:ups.svg', dark: 'file:ups.dark.svg' };
 
 	documentationUrl =
 		'https://github.com/nodrel-dev/n8n-ups-node?tab=readme-ov-file#shipper-profiles';
