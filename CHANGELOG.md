@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.6.1...v0.7.0) (2026-06-20)
+
+
+### Features
+
+* **node:** branded UPS icon (brown/gold, light+dark) for node and credentials ([f45d6c6](https://github.com/nodrel-dev/n8n-ups-node/commit/f45d6c6d9ca201769012ae6bf2a20d8d81554555))
+
 ## [0.6.1](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.6.0...v0.6.1) (2026-06-20)
 
 
