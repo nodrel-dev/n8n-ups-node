@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.5.0...v0.6.0) (2026-06-20)
+
+
+### Features
+
+* **node:** UX pass — Ship From toggle, persuasive copy, cognitive-load follow-ups ([#23](https://github.com/nodrel-dev/n8n-ups-node/issues/23)) ([b6904d4](https://github.com/nodrel-dev/n8n-ups-node/commit/b6904d472682d72536775c17206cb37c297412b2))
+
 ## [0.5.0](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.4.0...v0.5.0) (2026-06-19)
 
 
