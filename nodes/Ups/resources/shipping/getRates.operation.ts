@@ -97,11 +97,11 @@ export const getRatesOperationDescription: INodeProperties[] = [
 		default: '',
 		displayOptions: { show: showOnlyForRates },
 		description:
-			'Your UPS account number (ShipperNumber). Required (also requests negotiated rates) — leave blank only if a UPS Shipper Profile credential supplies it.',
+			'Enter your UPS account number to get your negotiated rates, not just published rates. This is your ShipperNumber; leave blank only if a UPS Shipper Profile credential supplies it.',
 	},
 	{
 		displayName:
-			'Tip: attach a UPS Shipper Profile credential to auto-fill the Shipper fields and Account Number. Any value you enter here overrides the profile.',
+			'Tip: attach a UPS Shipper Profile credential to reuse your Shipper details and account number across shipments without re-typing. Any value you enter here overrides the profile.',
 		name: 'shipperProfileNoticeRates',
 		type: 'notice',
 		default: '',
@@ -134,7 +134,7 @@ export const getRatesOperationDescription: INodeProperties[] = [
 		default: false,
 		displayOptions: { show: showOnlyForRates },
 		description:
-			'Whether this shipment is international (the origin and destination countries differ). Turning it on reveals the required customs fields; the node still validates internationality from the addresses at run time, so a genuine cross-border lane is caught even if this is left off.',
+			'Whether this is a cross-border shipment (origin and destination countries differ). Turning it on reveals the customs fields; you can safely leave it off — the node still detects a genuine international lane from the addresses at run time, so a cross-border shipment will not fail silently.',
 	},
 	{
 		displayName:
