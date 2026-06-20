@@ -130,8 +130,8 @@ cores own the rules:
 | `customsValue` / `customsCurrency` | `InvoiceLineTotal.MonetaryValue`/`CurrencyCode` (required if international) | Get Rates |
 | `service` | `Service.Code` (options dropdown; default `03`) | Create |
 | `labelFormat` | `LabelSpecification.LabelImageFormat.Code` + binary MIME | Create |
-| `customs.reasonForExport` / `customs.currency` / `customs.termsOfShipment` | `InternationalForms.ReasonForExport` / `CurrencyCode` / `TermsOfShipment` | Create (international) |
-| `customs.invoiceNumber` / `customs.invoiceDate` | `InternationalForms.InvoiceNumber` / `InvoiceDate` (date defaults to today UTC) | Create (international) |
+| `customsReasonForExport` / `customsCurrency` / `customsTermsOfShipment` | `InternationalForms.ReasonForExport` / `CurrencyCode` / `TermsOfShipment` | Create (international) |
+| `customsInvoiceNumber` / `customsInvoiceDate` | `InternationalForms.InvoiceNumber` / `InvoiceDate` (date defaults to today UTC) | Create (international) |
 | `soldTo*` | `InternationalForms.Contacts.SoldTo` | Create (international) |
 | `commodities.line[]` | `InternationalForms.Product[]` (via `buildCommodities`; ≥1 required if international) | Create (international) |
 

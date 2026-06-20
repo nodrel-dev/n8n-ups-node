@@ -22,6 +22,11 @@ const showOnlyForRates = {
 // isInternational predicate stays authoritative (ADR-0003) — this `international` toggle controls
 // field visibility, not request logic, so a genuine cross-border lane is still validated if it's off.
 const showOnlyForRatesIntl = { ...showOnlyForRates, international: [true] };
+// Ship From is an optional origin override. Hidden behind a toggle (progressive disclosure,
+// per n8n's node-UI guidance) because most users ship from the Shipper address and the seven
+// extra fields are confusing otherwise. Off → origin defaults to the Shipper (runtime behaviour
+// is unchanged: readParties' hasShipFrom stays false when the fields are blank/hidden).
+const showOnlyForRatesShipFrom = { ...showOnlyForRates, useDifferentShipFrom: [true] };
 
 // preSend builds the RateRequest and enforces the two boundary invariants BEFORE any UPS call
 // (FR-010/FR-014): an account number is mandatory, and an international lane requires a customs value.
@@ -97,11 +102,11 @@ export const getRatesOperationDescription: INodeProperties[] = [
 		default: '',
 		displayOptions: { show: showOnlyForRates },
 		description:
-			'Your UPS account number (ShipperNumber). Required (also requests negotiated rates) — leave blank only if a UPS Shipper Profile credential supplies it.',
+			'Enter your UPS account number to get your negotiated rates, not just published rates. This is your ShipperNumber; leave blank only if a UPS Shipper Profile credential supplies it.',
 	},
 	{
 		displayName:
-			'Tip: attach a UPS Shipper Profile credential to auto-fill the Shipper fields and Account Number. Any value you enter here overrides the profile.',
+			'Tip: attach a UPS Shipper Profile credential to reuse your Shipper details and account number across shipments without re-typing. Any value you enter here overrides the profile.',
 		name: 'shipperProfileNoticeRates',
 		type: 'notice',
 		default: '',
@@ -113,11 +118,20 @@ export const getRatesOperationDescription: INodeProperties[] = [
 		show: showOnlyForRates,
 		countryDefault: '',
 	}),
+	{
+		displayName: 'Use a Different Ship-From Address',
+		name: 'useDifferentShipFrom',
+		type: 'boolean',
+		default: false,
+		displayOptions: { show: showOnlyForRates },
+		description:
+			'Whether the package ships from a different address than the Shipper. Leave off to ship from the Shipper address (the default). Turn on only to override the physical origin — e.g. a warehouse or 3PL that differs from your account address.',
+	},
 	...addressFields({
 		prefix: 'shipFrom',
 		label: 'Ship From',
-		show: showOnlyForRates,
-		hint: 'Optional. Defaults to the Shipper address when left blank.',
+		show: showOnlyForRatesShipFrom,
+		hint: 'Origin address when it differs from the Shipper. Any field left blank falls back to the matching Shipper value.',
 	}),
 	...addressFields({
 		prefix: 'shipTo',
@@ -134,7 +148,7 @@ export const getRatesOperationDescription: INodeProperties[] = [
 		default: false,
 		displayOptions: { show: showOnlyForRates },
 		description:
-			'Whether this shipment is international (the origin and destination countries differ). Turning it on reveals the required customs fields; the node still validates internationality from the addresses at run time, so a genuine cross-border lane is caught even if this is left off.',
+			'Whether this is a cross-border shipment (origin and destination countries differ). Turning it on reveals the customs fields; you can safely leave it off — the node still detects a genuine international lane from the addresses at run time, so a cross-border shipment will not fail silently.',
 	},
 	{
 		displayName:

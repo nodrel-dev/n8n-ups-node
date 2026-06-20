@@ -33,6 +33,11 @@ const showOnlyForCreate = {
 // field visibility, not request logic, so a genuine cross-border lane is still validated if it's off.
 const showOnlyForCreateIntl = { ...showOnlyForCreate, international: [true] };
 
+// Ship From is an optional origin override, hidden behind a toggle (progressive disclosure) to
+// match Get Rates and keep the seven origin fields out of the way of the common case. Off →
+// origin defaults to the Shipper (runtime unchanged: ShipFrom name/address fall back to Shipper).
+const showOnlyForCreateShipFrom = { ...showOnlyForCreate, useDifferentShipFrom: [true] };
+
 // Create is the constitution's permitted exception for binary + customs assembly (Principle 5,
 // ADR-0004). n8n bypasses declarative routing entirely once a node defines an `execute()` method, so
 // to keep Track/Validate/Rate declarative the WHOLE node stays declarative — Create realizes the
@@ -71,27 +76,18 @@ function todayYyyyMmdd(): string {
 	return new Date().toISOString().slice(0, 10).replace(/-/g, '');
 }
 
-interface CustomsCollection {
-	reasonForExport?: string;
-	currency?: string;
-	termsOfShipment?: string;
-	invoiceNumber?: string;
-	invoiceDate?: string;
-}
-
 function readCustoms(get: ParamGetter): CustomsInput {
 	const soldTo = readAddress(get, 'soldTo');
-	// Customs scalars live in a `customs` collection (collapsed for domestic users). The collection
-	// defaults to `{}` until the user adds fields, so each value falls back to the same default that
-	// used to live on the flat field (SALE / USD / DDU / today). Fallback must NOT be undefined or
-	// getNodeParameter throws "Could not get parameter" (see readPackage).
-	const customs = get('customs', {}) as CustomsCollection;
+	// Customs scalars are flat fields, gated to international (showOnlyForCreateIntl) so domestic
+	// users never see them — matching Get Rates' flat customsValue/customsCurrency shape. Each value
+	// falls back to the same default it has always carried (SALE / USD / DDU / today). Fallbacks must
+	// NOT be undefined or getNodeParameter throws "Could not get parameter" (see readPackage).
 	return {
-		reasonForExport: customs.reasonForExport || 'SALE',
-		currency: customs.currency || 'USD',
-		termsOfShipment: customs.termsOfShipment || 'DDU',
-		invoiceNumber: (customs.invoiceNumber || '').trim() || undefined,
-		invoiceDate: (customs.invoiceDate || '').trim() || todayYyyyMmdd(),
+		reasonForExport: (get('customsReasonForExport', 'SALE') as string) || 'SALE',
+		currency: (get('customsCurrency', 'USD') as string) || 'USD',
+		termsOfShipment: (get('customsTermsOfShipment', 'DDU') as string) || 'DDU',
+		invoiceNumber: ((get('customsInvoiceNumber', '') as string) || '').trim() || undefined,
+		invoiceDate: ((get('customsInvoiceDate', '') as string) || '').trim() || todayYyyyMmdd(),
 		soldTo: {
 			name: get('soldToName', '') as string,
 			addressLines: soldTo.addressLines,
@@ -213,7 +209,7 @@ export const createOperationDescription: INodeProperties[] = [
 		default: '',
 		displayOptions: { show: showOnlyForCreate },
 		description:
-			'Your UPS account number (ShipperNumber). Billed as the shipper (Type 01). Leave blank only if a UPS Shipper Profile credential supplies it.',
+			'Enter your UPS account number — this is the account that ships and is billed for the shipment (Type 01). This is your ShipperNumber; leave blank only if a UPS Shipper Profile credential supplies it.',
 	},
 	{
 		displayName: 'Service',
@@ -260,7 +256,7 @@ export const createOperationDescription: INodeProperties[] = [
 	},
 	{
 		displayName:
-			'Tip: attach a UPS Shipper Profile credential to auto-fill the Shipper fields and Account Number. Any value you enter here overrides the profile.',
+			'Tip: attach a UPS Shipper Profile credential to reuse your Shipper details and account number across shipments without re-typing. Any value you enter here overrides the profile.',
 		name: 'shipperProfileNoticeCreate',
 		type: 'notice',
 		default: '',
@@ -274,12 +270,21 @@ export const createOperationDescription: INodeProperties[] = [
 		includePhone: true,
 		countryDefault: '',
 	}),
+	{
+		displayName: 'Use a Different Ship-From Address',
+		name: 'useDifferentShipFrom',
+		type: 'boolean',
+		default: false,
+		displayOptions: { show: showOnlyForCreate },
+		description:
+			'Whether the package ships from a different address than the Shipper. Leave off to ship from the Shipper address (the default). Turn on only to override the physical origin — e.g. a warehouse or 3PL that differs from your account address.',
+	},
 	...addressFields({
 		prefix: 'shipFrom',
 		label: 'Ship From',
-		show: showOnlyForCreate,
+		show: showOnlyForCreateShipFrom,
 		includeName: true,
-		hint: 'Optional. Defaults to the Shipper address when left blank.',
+		hint: 'Origin address when it differs from the Shipper. Any field left blank falls back to the matching Shipper value.',
 	}),
 	...addressFields({
 		prefix: 'shipTo',
@@ -313,7 +318,7 @@ export const createOperationDescription: INodeProperties[] = [
 		default: false,
 		displayOptions: { show: showOnlyForCreate },
 		description:
-			'Whether this shipment is international (the origin and destination countries differ). Turning it on reveals the Customs, Sold To, and Commodities fields; the node still validates internationality from the addresses at run time, so a genuine cross-border lane is caught even if this is left off.',
+			'Whether this is a cross-border shipment (origin and destination countries differ). Turning it on reveals the Customs, Sold To, and Commodities fields; you can safely leave it off — the node still detects a genuine international lane from the addresses at run time, so a cross-border shipment will not fail silently.',
 	},
 	{
 		displayName:
@@ -323,56 +328,52 @@ export const createOperationDescription: INodeProperties[] = [
 		default: '',
 		displayOptions: { show: showOnlyForCreateIntl },
 	},
+	// International customs scalars as flat fields, gated to international (showOnlyForCreateIntl) so
+	// domestic users never see them — mirroring Get Rates' flat customsValue/customsCurrency shape so
+	// the two operations present one consistent customs model. Each default matches readCustoms.
 	{
-		// International customs scalars, grouped so domestic users see one collapsed row instead of
-		// five always-on fields (restores the `customs` collection from contracts/create-shipment.md).
-		// Each value still falls back to its prior default in readCustoms when the user adds nothing.
-		displayName: 'Customs',
-		name: 'customs',
-		type: 'collection',
-		placeholder: 'Add Customs Field',
-		default: {},
+		displayName: 'Customs Currency',
+		name: 'customsCurrency',
+		type: 'options',
+		options: CURRENCY_OPTIONS,
+		default: 'USD',
 		displayOptions: { show: showOnlyForCreateIntl },
-		description: 'Commercial-invoice details for international shipments',
-		options: [
-			{
-				displayName: 'Customs Currency',
-				name: 'currency',
-				type: 'options',
-				options: CURRENCY_OPTIONS,
-				default: 'USD',
-				description:
-					'Commercial-invoice currency. Pick a common code, or use an expression for any ISO 4217 code.',
-			},
-			{
-				displayName: 'Invoice Date',
-				name: 'invoiceDate',
-				type: 'string',
-				default: '',
-				placeholder: 'yyyyMMdd',
-				description:
-					'Commercial-invoice date in yyyyMMdd format. UPS requires it for international shipments; leave blank to use today (UTC).',
-			},
-			{
-				displayName: 'Invoice Number',
-				name: 'invoiceNumber',
-				type: 'string',
-				default: '',
-			},
-			{
-				displayName: 'Reason For Export',
-				name: 'reasonForExport',
-				type: 'string',
-				default: 'SALE',
-			},
-			{
-				displayName: 'Terms Of Shipment',
-				name: 'termsOfShipment',
-				type: 'string',
-				default: 'DDU',
-				description: 'Incoterms. v1 bills duties to the receiver (DDU).',
-			},
-		],
+		description:
+			'Commercial-invoice currency. Pick a common code, or use an expression for any ISO 4217 code.',
+	},
+	{
+		displayName: 'Invoice Date',
+		name: 'customsInvoiceDate',
+		type: 'string',
+		default: '',
+		placeholder: 'yyyyMMdd',
+		displayOptions: { show: showOnlyForCreateIntl },
+		description:
+			'Commercial-invoice date in yyyyMMdd format. UPS requires it for international shipments; leave blank to use today (UTC).',
+	},
+	{
+		displayName: 'Invoice Number',
+		name: 'customsInvoiceNumber',
+		type: 'string',
+		default: '',
+		displayOptions: { show: showOnlyForCreateIntl },
+		description: 'Commercial-invoice number (optional)',
+	},
+	{
+		displayName: 'Reason For Export',
+		name: 'customsReasonForExport',
+		type: 'string',
+		default: 'SALE',
+		displayOptions: { show: showOnlyForCreateIntl },
+		description: 'Commercial-invoice reason for export (e.g. SALE, GIFT, SAMPLE)',
+	},
+	{
+		displayName: 'Terms Of Shipment',
+		name: 'customsTermsOfShipment',
+		type: 'string',
+		default: 'DDU',
+		displayOptions: { show: showOnlyForCreateIntl },
+		description: 'Incoterms. v1 bills duties to the receiver (DDU).',
 	},
 	...addressFields({
 		prefix: 'soldTo',

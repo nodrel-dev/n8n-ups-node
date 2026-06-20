@@ -32,7 +32,21 @@ export class Ups implements INodeType {
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
-			{ name: 'upsOAuth2Api', required: true },
+			// n8n's declarative router (RoutingNode.prepareCredentials) takes the single-credential fast
+			// path ONLY when the node declares exactly one credential. The moment a second credential is
+			// declared (the profile, below) it UNCONDITIONALLY reads a node parameter named `authentication`
+			// to pick which credential authenticates the request, and `.find()`s the entry whose
+			// `displayOptions.show.authentication` matches — throwing "Could not get parameter:
+			// authentication" if that param is absent (gotchas §1, verified live n8n 2.25.7). So the OAuth2
+			// entry is gated on the hidden `authentication` param (default 'upsOAuth2'); it is always the
+			// resolved auth credential. The profile is intentionally left UNgated: it is non-auth, never
+			// matched by `.find()`, and read manually via getCredentials() in the preSend (ADR-0005) — but
+			// it must still be declared here so its picker renders and getCredentials can resolve it.
+			{
+				name: 'upsOAuth2Api',
+				required: true,
+				displayOptions: { show: { authentication: ['upsOAuth2'] } },
+			},
 			// Optional, non-auth config credential (ADR-0005). Holds reusable Shipper fields + account
 			// number; read at run time in the Get Rates / Create preSend and merged into the Shipper
 			// block (explicit field > profile > default). Only `upsOAuth2Api` authenticates requests.
@@ -58,6 +72,18 @@ export class Ups implements INodeType {
 			},
 		},
 		properties: [
+			// Disambiguates which declared credential authenticates the request. Required because the node
+			// carries two credentials (OAuth2 + optional profile); n8n's router reads this param whenever a
+			// node has >1 credential (gotchas §1). Hidden + single fixed value: UPS only ever authenticates
+			// via OAuth2, so the user never chooses. This is a NODE parameter — distinct from the OAuth2
+			// credential's own hidden `authentication: 'header'` field (the generic-OAuth2 send-as-header
+			// setting), which lives in a different namespace and is unaffected.
+			{
+				displayName: 'Authentication',
+				name: 'authentication',
+				type: 'hidden',
+				default: 'upsOAuth2',
+			},
 			{
 				displayName: 'Resource',
 				name: 'resource',

@@ -59,6 +59,11 @@ These strings are shown verbatim to n8n builders who have never read the UPS API
   From fields inline, even though the hint says *"Optional. Defaults to the Shipper address when left
   blank."*
 - Most users ship *from* the shipper address. Showing 7 always-empty fields they'll skip is clutter.
+- **✅ RESOLVED (2026-06-20).** Shipped via progressive disclosure rather than a collection (Recipe C):
+  a **Use a Different Ship-From Address** boolean (default `off`) now gates the flat Ship From block in
+  both Rates and Create. Off → the seven fields stay hidden and the origin defaults to the Shipper
+  (runtime unchanged — `hasShipFrom` stays false when the fields are blank/hidden). See Recipe C for why
+  the toggle was preferred over the collection.
 
 **1.4 — Always-on notice blocks (MEDIUM)**
 - The Shipper-Profile notices (`getRates.operation.ts:135-142`, `create.operation.ts:334-341`) are long
@@ -115,7 +120,7 @@ These strings are shown verbatim to n8n builders who have never read the UPS API
 |---|--------|--------------|--------|
 | 1 | Strip internal jargon (`delta 13.6`, `PoliticalDivision1/2`, UPS error codes) from all user-facing `description` strings; keep them in code comments only. | Pure noise the brain must discard | **HIGH** (trivial effort) |
 | 2 | Add an `Is International Shipment` boolean and gate Customs Value/Currency (Rates) + Customs/Sold To/Commodities (Create) behind it; keep `isInternational` as the runtime guard. | ~16 always-on rows for the domestic majority | **HIGH** |
-| 3 | Collapse the optional **Ship From** block into a collapsed collection in both Rates and Create. | 6–7 always-empty fields | **MEDIUM-HIGH** |
+| 3 | Collapse the optional **Ship From** block in both Rates and Create. ✅ **DONE (2026-06-20)** — shipped as a `Use a Different Ship-From Address` boolean toggle (progressive disclosure), not a collection (see Recipe C). | 6–7 always-empty fields | **MEDIUM-HIGH** |
 | 4 | Reorder the Service dropdown to lead with Ground / Next Day Air / 2nd Day Air; add a one-line Label Format hint ("GIF = image; ZPL/EPL/SPL = thermal label printers"). | Scan-of-28 + unfamiliar-choice paralysis | **MEDIUM** |
 | 5 | Shorten the always-on Shipper-Profile notices to one line, or move the detail behind the existing `documentationUrl`. | Wall of text at the top of every form | **MEDIUM** |
 
@@ -202,7 +207,7 @@ profile is internally usable.
 1. **Jargon strip (Node rec #1 + Cred rec #3)** — minutes of work, pure win, no behavior change, no
    re-verification needed.
 2. **Ship From collapse (Node rec #3)** and **credential notices (Cred recs #1, #2)** — low risk, no
-   API-path change.
+   API-path change. ✅ Ship From collapse done 2026-06-20 (boolean toggle, Recipe C).
 3. **International toggle (Node rec #2)** — the highest-impact change but touches `displayOptions` on
    ~16 fields across two operations; gate it behind the existing P11/P12 live-verify of both the normal
    and AI-Agent tool paths, since field visibility changes can interact with tool-path parameter
@@ -333,6 +338,16 @@ notice changes nothing about resolution in `loadShipperProfile`/`readShipper`.
 ---
 
 ### Recipe C — Collapse the optional Ship From block (finding 1.3)
+
+> **✅ SHIPPED (2026-06-20) — as a boolean toggle, not the collection below.** A
+> `Use a Different Ship-From Address` boolean (default `false`) now gates the existing flat Ship From
+> `addressFields` block via `displayOptions` in both `getRates.operation.ts` and `create.operation.ts`.
+> Off → the seven fields stay hidden and the origin defaults to the Shipper. The toggle was preferred
+> over the collection (Option C-light) because it keeps the **flat field names unchanged**, so the
+> `preSend` readers (`readAddress(get, 'shipFrom')`), the `hasShipFrom`/`effectiveShipFrom` fallback,
+> Create's `shipFromName` → `AttentionName` path, and every existing test all stay as-is — zero reader
+> change and zero field-shape change, which is lower-risk on the P11/P12 tool path than a collection.
+> The recommendation below is retained for the record.
 
 Ship From defaults to the Shipper address, yet renders 6–7 always-empty fields in both Rates and
 Create. Move it into a collapsed `collection` so the default needs zero interaction. This is the most

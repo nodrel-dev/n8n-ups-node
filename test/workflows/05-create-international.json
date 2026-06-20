@@ -32,12 +32,11 @@
         "weight": 2,
         "weightUnit": "KGS",
         "labelFormat": "GIF",
-        "customs": {
-          "reasonForExport": "SALE",
-          "currency": "USD",
-          "termsOfShipment": "DDU",
-          "invoiceNumber": "INV-1001"
-        },
+        "international": true,
+        "customsReasonForExport": "SALE",
+        "customsCurrency": "USD",
+        "customsTermsOfShipment": "DDU",
+        "customsInvoiceNumber": "INV-1001",
         "soldToName": "US Consignee",
         "soldToAddressLine1": "350 5th Ave",
         "soldToCity": "New York",

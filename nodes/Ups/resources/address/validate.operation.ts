@@ -103,14 +103,6 @@ export const validateOperationDescription: INodeProperties[] = [
 		displayOptions: { show: showOnlyForValidate },
 		description: 'Two-letter country code',
 	},
-	{
-		displayName:
-			'In the UPS Customer Integration Environment (Sandbox), street-level validation only returns results for US addresses in New York (NY) and California (CA). This limit does not apply in Production.',
-		name: 'validateSandboxNotice',
-		type: 'notice',
-		default: '',
-		displayOptions: { show: showOnlyForValidate },
-	},
 ];
 
 export const validateOperationOption = {

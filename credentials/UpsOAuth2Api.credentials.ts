@@ -32,7 +32,7 @@ export class UpsOAuth2Api implements ICredentialType {
 	properties: INodeProperties[] = [
 		{
 			displayName:
-				'Create a UPS app at the UPS Developer Portal (developer.ups.com) to get your Client ID and Client Secret. Use the same UPS account whose number you ship with.',
+				"1) Create an app at the UPS Developer Portal (developer.ups.com). 2) Copy its Client ID and Client Secret into the fields below. 3) Pick your Environment (start with Sandbox). 4) Click Test — a green result means you're connected and ready to track, rate, and ship. Use the same UPS account whose number you ship with.",
 			name: 'setupNotice',
 			type: 'notice',
 			default: '',
@@ -47,7 +47,7 @@ export class UpsOAuth2Api implements ICredentialType {
 			],
 			default: 'sandbox',
 			description:
-				'Which UPS environment to use. Sandbox is the Customer Integration Environment (CIE). Drives both the token URL and the API base URL.',
+				'Which UPS environment to use. Sandbox is the Customer Integration Environment (CIE). Drives both the token URL and the API base URL. In Sandbox (CIE), address validation only returns street-level results for US addresses in New York (NY) and California (CA), and Track returns a canned DELIVERED response for any well-formed 1Z number — these limits do not apply in Production.',
 		},
 		{
 			displayName: 'Grant Type',
