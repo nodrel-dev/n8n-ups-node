@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.6.0...v0.6.1) (2026-06-20)
+
+
+### Bug Fixes
+
+* **meta:** correct author email in package.json ([cdae0aa](https://github.com/nodrel-dev/n8n-ups-node/commit/cdae0aa9cf023e52aed818cb0a8ca883908b362d))
+
 ## [0.6.0](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.5.0...v0.6.0) (2026-06-20)
 
 
