@@ -22,6 +22,11 @@ const showOnlyForRates = {
 // isInternational predicate stays authoritative (ADR-0003) — this `international` toggle controls
 // field visibility, not request logic, so a genuine cross-border lane is still validated if it's off.
 const showOnlyForRatesIntl = { ...showOnlyForRates, international: [true] };
+// Ship From is an optional origin override. Hidden behind a toggle (progressive disclosure,
+// per n8n's node-UI guidance) because most users ship from the Shipper address and the seven
+// extra fields are confusing otherwise. Off → origin defaults to the Shipper (runtime behaviour
+// is unchanged: readParties' hasShipFrom stays false when the fields are blank/hidden).
+const showOnlyForRatesShipFrom = { ...showOnlyForRates, useDifferentShipFrom: [true] };
 
 // preSend builds the RateRequest and enforces the two boundary invariants BEFORE any UPS call
 // (FR-010/FR-014): an account number is mandatory, and an international lane requires a customs value.
@@ -113,11 +118,20 @@ export const getRatesOperationDescription: INodeProperties[] = [
 		show: showOnlyForRates,
 		countryDefault: '',
 	}),
+	{
+		displayName: 'Use a Different Ship-From Address',
+		name: 'useDifferentShipFrom',
+		type: 'boolean',
+		default: false,
+		displayOptions: { show: showOnlyForRates },
+		description:
+			'Whether the package ships from a different address than the Shipper. Leave off to ship from the Shipper address (the default). Turn on only to override the physical origin — e.g. a warehouse or 3PL that differs from your account address.',
+	},
 	...addressFields({
 		prefix: 'shipFrom',
 		label: 'Ship From',
-		show: showOnlyForRates,
-		hint: 'Optional. Defaults to the Shipper address when left blank.',
+		show: showOnlyForRatesShipFrom,
+		hint: 'Origin address when it differs from the Shipper. Any field left blank falls back to the matching Shipper value.',
 	}),
 	...addressFields({
 		prefix: 'shipTo',

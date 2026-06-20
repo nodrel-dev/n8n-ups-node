@@ -33,6 +33,11 @@ const showOnlyForCreate = {
 // field visibility, not request logic, so a genuine cross-border lane is still validated if it's off.
 const showOnlyForCreateIntl = { ...showOnlyForCreate, international: [true] };
 
+// Ship From is an optional origin override, hidden behind a toggle (progressive disclosure) to
+// match Get Rates and keep the seven origin fields out of the way of the common case. Off →
+// origin defaults to the Shipper (runtime unchanged: ShipFrom name/address fall back to Shipper).
+const showOnlyForCreateShipFrom = { ...showOnlyForCreate, useDifferentShipFrom: [true] };
+
 // Create is the constitution's permitted exception for binary + customs assembly (Principle 5,
 // ADR-0004). n8n bypasses declarative routing entirely once a node defines an `execute()` method, so
 // to keep Track/Validate/Rate declarative the WHOLE node stays declarative — Create realizes the
@@ -265,12 +270,21 @@ export const createOperationDescription: INodeProperties[] = [
 		includePhone: true,
 		countryDefault: '',
 	}),
+	{
+		displayName: 'Use a Different Ship-From Address',
+		name: 'useDifferentShipFrom',
+		type: 'boolean',
+		default: false,
+		displayOptions: { show: showOnlyForCreate },
+		description:
+			'Whether the package ships from a different address than the Shipper. Leave off to ship from the Shipper address (the default). Turn on only to override the physical origin — e.g. a warehouse or 3PL that differs from your account address.',
+	},
 	...addressFields({
 		prefix: 'shipFrom',
 		label: 'Ship From',
-		show: showOnlyForCreate,
+		show: showOnlyForCreateShipFrom,
 		includeName: true,
-		hint: 'Optional. Defaults to the Shipper address when left blank.',
+		hint: 'Origin address when it differs from the Shipper. Any field left blank falls back to the matching Shipper value.',
 	}),
 	...addressFields({
 		prefix: 'shipTo',

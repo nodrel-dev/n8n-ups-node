@@ -206,7 +206,7 @@ The node sets `usableAsTool: true`, so every operation is callable from the AI-A
 
 ### Get Rates and Create
 
-Both operations share the same **Shipper**, **Ship From**, and **Ship To** address fields, so values carry over when you switch between them. Package dimensions (length/width/height) are optional and only sent to UPS when provided. Ship From is optional and defaults to the Shipper address.
+Both operations share the same **Shipper**, **Ship From**, and **Ship To** address fields, so values carry over when you switch between them. Package dimensions (length/width/height) are optional and only sent to UPS when provided. Ship From defaults to the Shipper address and stays hidden until you turn on **Use a Different Ship-From Address** — switch it on only to override the physical origin (e.g. a warehouse or 3PL that differs from your account address); any field you leave blank still falls back to the matching Shipper value.
 
 ### The label binary (Create)
 
