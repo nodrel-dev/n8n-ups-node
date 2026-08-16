@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.7.0...v0.7.1) (2026-08-16)
+
+
+### Bug Fixes
+
+* **harness:** take tarball name from npm pack instead of mtime scan ([#30](https://github.com/nodrel-dev/n8n-ups-node/issues/30)) ([e60bf96](https://github.com/nodrel-dev/n8n-ups-node/commit/e60bf9622e2e2a70e2da34a6f7c54978fc85e7a1))
+
 ## [0.7.0](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.6.1...v0.7.0) (2026-06-20)
 
 
