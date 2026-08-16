@@ -204,3 +204,74 @@ the harness, n8n 2.25.7, NOT just from docs). So a non-auth "config credential" 
 ADR-0005) will always *look* like a credential; budget for that in UX rather than expecting to hide it.
 Credential `displayName` must end with `API` (`cred-class-field-display-name-missing-api` lint rule), so a
 "(Optional)" hint has to precede that suffix, e.g. `UPS Shipper Profile (Optional) API`.
+
+## §15 — CI/CD workflow suite: labeler, scanner overlap, orphaned SARIF (verified live 2026-08-16)
+
+Traps hit while wiring up the repo's GitHub Actions suite. All verified against live runs,
+not docs.
+
+**`actions/labeler` needs THREE things, and fails loudly on any one.** Adding the workflow
+from GitHub's UI template gives you only the first:
+1. `.github/workflows/label.yml` — the workflow.
+2. `.github/labeler.yml` — the path rules. Without it the action dies with a bare
+   `##[error]HttpError: Not Found` on **every** PR; the message never names the missing file.
+3. The **labels must already exist** in the repo. `actions/labeler` applies labels, it never
+   creates them, and it errors on any name not already present. Create them up front with
+   `gh label create`.
+
+**Labeler v4 → v5+ is a breaking config change.** v4 took `label: [glob, ...]`; v5 and later
+require the nested `changed-files:` / `any-glob-to-any-file:` form. The action version and the
+config schema must move together — a v5+ config under `@v4` (or the reverse) fails to parse.
+Current is `@v7`.
+
+**`pull_request_target` reads BOTH the workflow and its config from the base branch.** A PR
+that adds or edits `.github/labeler.yml` will NOT be labelled by its own new rules — GitHub
+loads them from `main`. This looks broken and isn't: label taxonomy is repo policy, and a PR
+should not be able to redefine repo policy from inside itself. Budget one merge for any rules
+change. Switching to plain `pull_request` "fixes" it but breaks labelling on every **fork** PR,
+because GitHub forces `GITHUB_TOKEN` read-only there and `permissions:` cannot elevate it.
+
+**Two scanners will fight over the same concern.** The Codacy template workflow is named
+"Codacy Security Scan" but without a `CODACY_PROJECT_TOKEN` it silently falls back to a default
+tool set — here Remark-lint, Shellcheck, Tslint, Jshint. It found **zero** security issues and
+filed 8 markdown style nits into the GitHub **Security** tab, the same queue a real vulnerability
+appears in. That matters because n8n verification reviewers may look at that tab. Resolved by
+deleting `codacy.yml`, leaving CodeQL as the sole security tool, and porting the one useful
+signal (shellcheck on `scripts/**`) into `ci.yml` as a native step at `--severity=warning` —
+merge gates should block on real bugs, not style notes.
+
+**SARIF alerts SURVIVE the tool that produced them.** Deleting a scanner's workflow does not
+retract its findings; the alerts sit open in Security forever. Dismiss them explicitly:
+`gh api -X PATCH repos/OWNER/REPO/code-scanning/alerts/N -f state=dismissed -f dismissed_reason="won't fix"`.
+Note `gh api` will not iterate a newline-joined jq list — pipe through `while read -r`.
+
+**CodeQL's `actions` language pack lints your workflows.** It flagged
+`actions/missing-workflow-permissions` on `ci.yml` — a real finding. Give every workflow a
+top-level `permissions:` block (`contents: read` unless it needs more).
+
+**The scaffold shipped two identical build workflows.** `ci.yml` and `validate.yml` both came
+from the initial scaffold commit with the same triggers, runner, and lint/test/build steps —
+`validate` added only `npm pack --dry-run`. Every PR ran the suite twice and the Node 24 pin
+lived in two drift-prone places. Check for this on any fresh scaffold. See CLAUDE.md's
+one-workflow-per-concern rule.
+
+## §16 — Some scaffold `__SERVICE__` placeholders are LOAD-BEARING (verified 2026-08-16)
+
+`CLAUDE.md` shipped with genuinely unreplaced scaffold tokens (`__FULLNAME__`, `__SERVICE__`)
+— including inside a runnable command — and those were correctly substituted. But do **not**
+sweep the whole repo for `__SERVICE__` and "clean it up":
+
+`scripts/harness-up.sh` reads the UPS client id/secret with
+`read_env __SERVICE___CLIENT_ID` (falling back to `UPS_CLIENT_ID`), and the live `.env.local`
+actually uses the `__SERVICE___*` key names. So the placeholder-looking branch is the one in
+use and the `UPS_*` branch is dead. Deleting the `__SERVICE__` reads does not error — the
+script prints "credential will be seeded EMPTY" and boots n8n with a blank credential, so the
+failure surfaces later as a confusing auth error inside the harness rather than at cleanup time.
+
+Rule: before removing a scaffold token, check whether it is a *placeholder* (a name meant to
+be replaced) or an *identifier* (a literal key something else already stores under that name).
+`grep -oE '^[A-Za-z_][A-Za-z0-9_]*' .env.local` lists the keys without exposing values.
+
+Safe migration if you want them gone: rename the keys in `.env.local` to `UPS_CLIENT_ID` /
+`UPS_CLIENT_SECRET` / `UPS_ENV` first (the fallback already supports them), confirm the harness
+still seeds a working credential, and only then delete the `__SERVICE__` reads from the script.
