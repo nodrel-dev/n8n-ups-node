@@ -22,3 +22,5 @@ export function toMoney(charge: UpsCharge | undefined | null): Money | null {
 	}
 	return { amount: MonetaryValue, currency: CurrencyCode };
 }
+
+// labeler smoke test — remove before merge

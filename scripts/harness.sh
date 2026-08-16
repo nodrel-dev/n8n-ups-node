@@ -35,3 +35,5 @@ docker run --rm -it \
 
 # For --ci: install the tarball, import test/workflows/*.json, then
 # `n8n execute --id <id>` each and assert on output. Wire to your fixtures.
+
+# labeler smoke test — remove before merge

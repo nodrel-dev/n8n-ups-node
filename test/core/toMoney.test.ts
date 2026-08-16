@@ -23,3 +23,5 @@ describe('toMoney', () => {
 		expect(toMoney({ MonetaryValue: '10.00' })).toBeNull();
 	});
 });
+
+// labeler smoke test — remove before merge
