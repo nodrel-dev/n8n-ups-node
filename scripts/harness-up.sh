@@ -53,8 +53,9 @@ read_env() {
 cmd_up() {
   echo "==> Building $PKG_NAME"
   npm run build
-  npm pack >/dev/null
-  TARBALL="$(ls -t ./*.tgz | head -n1)"
+  # `npm pack` prints the tarball filename to stdout (notices go to stderr), so take it
+  # from there rather than rescanning the repo root by mtime for stale *.tgz files.
+  TARBALL="$(npm pack | tail -n1)"
   echo "    packed: $TARBALL"
 
   # --- pull secrets (supports the scaffold's __SERVICE__* names and plain UPS_* names) -------
