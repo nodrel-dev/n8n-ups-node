@@ -1,6 +1,6 @@
-# __FULLNAME__ — Claude Code project memory
+# @nodrel-dev/n8n-nodes-ups — Claude Code project memory
 
-A verified-targeted n8n community node for __SERVICE__, scaffolded with the n8n-node CLI.
+A verified-targeted n8n community node for UPS, scaffolded with the n8n-node CLI.
 Rules are imperative. Rationale lives in the imports below; do not duplicate it here.
 
 ## Source of truth (imports)
@@ -18,6 +18,12 @@ Rules are imperative. Rationale lives in the imports below; do not duplicate it 
 - Zero runtime dependencies. Built-in n8n HTTP helpers only. Never add a SOAP/XML/SDK dep.
 - Node.js >= 22.22 for `n8n-node dev`. All GitHub Actions workflows pin **Node 24**
   (`actions/setup-node` `node-version: '24'`) — keep every workflow on 24, not `lts/*` or `22`.
+- **One workflow per concern.** `ci.yml` is the ONLY merge gate (lint → test → build →
+  `npm pack --dry-run` → shellcheck); `codeql.yml` owns security; `label.yml`/`stale.yml`
+  own triage; `release-please.yml` owns release. Do not add a second build/lint workflow
+  (the scaffold's duplicate `validate.yml` was folded in and deleted), and do not add a
+  second security scanner (Codacy was removed — see gotchas §15). A red `CI` must mean
+  exactly one thing: the code is broken.
 - Build/lint/dev go through the n8n-node CLI. Releases are driven by **release-please**:
   merge the auto-generated release PR on `main` and the `release-please.yml` workflow tags,
   publishes to npm with provenance, and scans. Never run a release or `npm publish` locally;
@@ -31,7 +37,7 @@ Rules are imperative. Rationale lives in the imports below; do not duplicate it 
 - Declarative node style by default; programmatic only with a documented reason.
 
 ## Definition of done
-- `npm run lint` clean and `npx @n8n/scan-community-package __FULLNAME__` passes.
+- `npm run lint` clean and `npx @n8n/scan-community-package @nodrel-dev/n8n-nodes-ups` passes.
 - Verified through normal AND AI-Agent tool paths in the Docker harness.
 - No new runtime dependency introduced.
 
