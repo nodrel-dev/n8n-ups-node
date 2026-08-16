@@ -1,12 +1,15 @@
+# The single merge gate: does this change lint, test, build, and package correctly?
+# Nothing else belongs here. Security analysis lives in codeql.yml; PR triage lives in
+# label.yml and stale.yml. If this workflow is red, the code is broken — that is the
+# only thing a red CI should ever mean.
 name: CI
 
 on:
   pull_request:
   push:
-    branches:
-      - main
+    branches: [main]
 
-# Cancel in-progress runs for the same branch/PR to avoid wasting CI minutes.
+# Auto-cancel superseded runs for the same branch/PR.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -17,24 +20,45 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '24'
+          node-version: '24'   # all GH Actions pin Node 24 (satisfies n8n-node's >= 22.22 floor)
           cache: 'npm'
 
-      - name: Install dependencies
-        run: 'npm ci'
+      - name: Install
+        run: npm ci
 
-      - name: Run lint
-        run: 'npm run lint'
+      - name: Lint (n8n-node lint, strict mode)
+        run: npm run lint
 
-      - name: Run unit tests
-        run: 'npm test'
+      - name: Unit tests (vitest, pure cores — Principle 10)
+        run: npm test
 
-      - name: Run build
-        run: 'npm run build'
+      - name: Build
+        run: npm run build
+
+      # Confirms the published tarball is LICENSE + README + dist only
+      # (guards the incremental-build trap from the gotchas).
+      - name: Pack check
+        run: npm pack --dry-run
+
+      # Shell linting for the Docker harness scripts. `warning` and above only —
+      # info-level style preferences (e.g. SC2012 `ls -t`) should not block a merge.
+      # shellcheck is preinstalled on the ubuntu-latest runner image.
+      - name: Shellcheck (harness scripts)
+        run: shellcheck --severity=warning scripts/*.sh bootstrap-internal.sh
+
+      # NOTE: `@n8n/scan-community-package` is intentionally NOT run here — it scans the
+      # PUBLISHED npm package (fetches from registry.npmjs.org) and 404s on an unpublished
+      # version, so it can only run post-publish. It lives in release-please.yml's `scan` job.
+
+  # Optional: dual-path execution test in a real n8n container.
+  # Enable once you have harness workflows committed under test/.
+  # harness:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #     - run: ./scripts/harness.sh --ci
