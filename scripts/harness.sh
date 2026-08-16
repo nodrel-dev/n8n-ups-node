@@ -17,8 +17,11 @@ PORT="${N8N_PORT:-5678}"
 
 echo "==> Building $PKG_NAME"
 npm run build
-npm pack
-TARBALL="$(ls -t ./*.tgz | head -n1)"
+# Take the name straight from `npm pack` — it prints the tarball filename to stdout
+# (notices go to stderr). Rescanning the directory by mtime instead would depend on
+# whatever stale *.tgz files happen to be sitting in the repo root.
+TARBALL="$(npm pack | tail -n1)"
+echo "    packed: $TARBALL"
 
 echo "==> Starting n8n (Docker) with $PKG_NAME installed on :$PORT"
 # Community nodes must be installed into ~/.n8n/nodes (the node_modules under the `nodes`
