@@ -1,0 +1,49 @@
+# Path-based PR labels, consumed by .github/workflows/label.yml (actions/labeler v5+ schema).
+# Labels referenced here must already exist in the repo — the action does not create them.
+
+node:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'nodes/**'
+
+credentials:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'credentials/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'test/**'
+          - 'vitest.config.ts'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+
+build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tsconfig.json'
+          - 'eslint.config.mjs'
+          - 'commitlint.config.cjs'
+          - 'lefthook.yml'
+
+harness:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'scripts/**'
+          - 'test/workflows/**'

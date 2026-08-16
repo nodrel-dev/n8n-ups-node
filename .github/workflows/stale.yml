@@ -1,27 +1,47 @@
-# This workflow warns and then closes issues and PRs that have had no activity for a specified amount of time.
-#
-# You can adjust the behavior by modifying this file.
-# For more information, see:
+# Warns and then closes issues and PRs that have had no activity for a while.
 # https://github.com/actions/stale
 name: Mark stale issues and pull requests
 
 on:
   schedule:
-  - cron: '16 23 * * *'
+    - cron: '16 23 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   stale:
-
     runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write
 
     steps:
-    - uses: actions/stale@v5
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        stale-issue-message: 'Stale issue message'
-        stale-pr-message: 'Stale pull request message'
-        stale-issue-label: 'no-issue-activity'
-        stale-pr-label: 'no-pr-activity'
+      - uses: actions/stale@v11
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          days-before-stale: 60
+          days-before-close: 14
+
+          stale-issue-label: 'no-issue-activity'
+          stale-pr-label: 'no-pr-activity'
+
+          stale-issue-message: >
+            This issue has had no activity for 60 days and is being marked stale.
+            Comment to keep it open — otherwise it will be closed in 14 days.
+          close-issue-message: >
+            Closing this issue after 14 days with no further activity.
+            Comment if this is still relevant and it will be reopened.
+
+          stale-pr-message: >
+            This pull request has had no activity for 60 days and is being marked stale.
+            Push a commit or comment to keep it open — otherwise it will be closed in 14 days.
+          close-pr-message: >
+            Closing this pull request after 14 days with no further activity.
+            Reopen it any time if you want to pick the work back up.
+
+          exempt-issue-labels: 'help wanted,good first issue,enhancement'
+          exempt-pr-labels: 'help wanted'
+          exempt-all-milestones: true
