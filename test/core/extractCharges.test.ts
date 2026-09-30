@@ -1,4 +1,3 @@
-/* eslint-disable @n8n/community-nodes/no-restricted-imports -- dev-only vitest tests; not part of the shipped node (files: dist only) */
 import { describe, it, expect } from 'vitest';
 import { extractCharges } from '../../nodes/Ups/core/extractCharges';
 
