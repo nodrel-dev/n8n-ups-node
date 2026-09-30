@@ -344,3 +344,32 @@ to the real one. The tell was alarming and misleading: `git log -- docs/` showed
 Nothing was lost — it was the wrong repo, not a damaged one. When two repos are nested, prefer
 absolute paths for writes, and confirm with `pwd` + `git remote get-url origin` before concluding
 that files have gone missing.
+
+## §20 — Toolchain advisories you cannot fix: `overrides` is lint-banned (verified 2026-09-30)
+
+`npm audit` reports advisories that sit entirely inside n8n's own dev toolchain. The production
+tree is empty (`npm audit --omit=dev` → 0) and the tarball is LICENSE + README + dist, so none reach
+a user. Most of them cannot be cleared from this repo either:
+
+- `@n8n/backend-network` (pulled by `@n8n/node-cli` → `@n8n/ai-node-sdk` → `@n8n/ai-utilities`) and
+  `n8n-workflow` pin **exact** versions: `axios 1.18.0` (vulnerable `1.0.0–1.19.0`) and `qs 6.15.2`
+  (vulnerable `≤6.15.3`). They are still pinned in the newest releases (node-cli 0.50.3, n8n-workflow
+  2.41.1 stable / 2.42.1 beta), so upgrading does not help.
+- The same AI SDK tree carries `uuid 10.0.0` (via `@langchain/classic` / `@langchain/community`;
+  Dependabot GHSA-w5hq-g745-h8pq) and `stream-json 1.9.1` (via `@n8n/backend-common`;
+  Dependabot GHSA-528h-pc64-c93x).
+
+**The obvious fix is forbidden.** npm `overrides` (axios ≥1.20, qs ≥6.16, uuid ≥11.1.1,
+stream-json ≥3.7) takes `npm audit` to zero and all tests still pass, but `n8n-node lint` fails with
+`@n8n/community-nodes/no-overrides-field`: "overrides/resolutions fields are not allowed in community
+node packages". That would break both CI and verification. Do not add them, and do not run
+`npm audit fix --force` (it downgrades `@n8n/node-cli` to 0.37.4).
+
+What IS fixable goes through the normal path: grouped Dependabot bumps and a plain `npm audit fix`
+(which pulls patched `brace-expansion` 1.1.21 / 2.1.7 / 5.0.12 into eslint's and oclif's minimatch).
+Dependabot alerts for the upstream-pinned packages are dismissed as `tolerable_risk`, with a link to
+this section. Re-check when a new `@n8n/node-cli` lands: `npm ls axios qs uuid stream-json --all`.
+
+Side effect of node-cli ≥0.50: `@n8n/community-nodes/no-restricted-imports` no longer fires on
+test files or `vitest.config.ts`, so the old `/* eslint-disable ... */` headers there became
+"unused directive" warnings and were removed.
