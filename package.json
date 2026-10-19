@@ -47,12 +47,12 @@
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
-    "@n8n/node-cli": "^0.50.3",
+    "@n8n/node-cli": "^0.53.1",
     "@types/node": "^22.20.4",
     "eslint": "9.32.0",
     "lefthook": "^2.1.15",
     "n8n-workflow": "^2.41.1",
-    "prettier": "3.9.9",
+    "prettier": "3.9.10",
     "typescript": "5.9.3",
     "vitest": "^5.0.3"
   },
