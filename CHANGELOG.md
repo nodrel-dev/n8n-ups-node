@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.7.3...v0.7.4) (2026-11-26)
+
+
+### Bug Fixes
+
+* **deps:** restore vite after vitest 5 and patch toolchain advisories ([#76](https://github.com/nodrel-dev/n8n-ups-node/issues/76)) ([8fc3ec3](https://github.com/nodrel-dev/n8n-ups-node/commit/8fc3ec3e0640f11c8c1a44cf7590479c2b230e32))
+
 ## [0.7.3](https://github.com/nodrel-dev/n8n-ups-node/compare/v0.7.2...v0.7.3) (2026-09-06)
 
 
