@@ -373,3 +373,34 @@ this section. Re-check when a new `@n8n/node-cli` lands: `npm ls axios qs uuid s
 Side effect of node-cli ≥0.50: `@n8n/community-nodes/no-restricted-imports` no longer fires on
 test files or `vitest.config.ts`, so the old `/* eslint-disable ... */` headers there became
 "unused directive" warnings and were removed.
+
+**Update 2026-11-26: `handlebars`, and the node-cli upgrade that fixes it but collides with
+ADR-0005.** `@n8n/node-cli` 0.50.x pins `handlebars` to exactly `4.7.9`, which carries two
+critical injection advisories plus one moderate (GHSA-8r5x-fm3f-whwj, GHSA-p8wg-vrv2-v86f,
+GHSA-xw65-4hp5-5hc7). It is reachable only when node-cli renders its own scaffold templates. node-cli
+**0.58.7** pins the patched `4.7.10`, and it also clears the `axios` / `qs` pins above (verified:
+`axios 1.20.0`, `qs 6.16.0`). But 0.58 adds the lint rule
+`@n8n/community-nodes/single-credential-per-node`, which **fails** on the optional
+`UpsShipperProfile` credential ("A node can use only one credential at a time … Move
+non-authentication settings to a node property or collection"). We cannot change the eslint
+config, and verification scans with n8n's current rules, so that upgrade requires redesigning
+ADR-0005 rather than a dependency bump. Until then, the handlebars alerts are dismissed as
+`tolerable_risk` alongside the others in this section.
+
+## §21 — vitest 5 makes `vite` a peer dep; a red Dependabot merge broke `main` for 7 weeks (verified 2026-11-26)
+
+vitest 5 moved `vite` from `dependencies` to `peerDependencies`. Dependabot's regenerated lockfile
+for the 4 → 5 bump (#66) dropped `vite` entirely, so `npm ci` installed no vite and every test run
+died at startup with `Cannot find package 'vite' imported from …/vitest/dist/chunks/…`
+(`ERR_MODULE_NOT_FOUND`). It still passed locally because an existing `node_modules` kept the old
+vite.
+
+#66 was merged with a red `build`. From then on, **every** Dependabot security PR inherited that
+failure, so no advisory fix could land, and the PRs looked as if each bump were broken. Fix:
+`vite` is now an explicit devDependency (#76).
+
+Two lessons:
+- When several unrelated PRs all fail the same way, check `main` first:
+  `gh run list --workflow ci.yml --branch main`.
+- A red `CI` blocks the merge, Dependabot included (see CLAUDE.md). Reproduce with a clean
+  `npm ci`, not an existing `node_modules`.
